@@ -1,65 +1,93 @@
 # GLM-CODEX-MCP
 
-> Claude + GLM + Codex 三方协作 MCP 服务器
+<div align="center">
 
-让 Claude (Opus) 作为架构师调度 GLM 执行代码任务、Codex 审核代码质量，形成自动化的三方协作闭环。
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Python](https://img.shields.io/badge/python-3.12+-blue.svg)
+![MCP](https://img.shields.io/badge/MCP-1.20.0+-green.svg)
+![Status](https://img.shields.io/badge/status-beta-orange.svg)
 
-## 核心价值
+**Claude (Opus) + GLM + Codex 三方协作 MCP 服务器**
 
-| 维度 | 价值 |
-|------|------|
-| **成本优化** | Opus 负责思考（贵但强），GLM 负责执行（量大管饱） |
-| **能力互补** | Opus 补足 GLM 创造力短板，Codex 提供独立审核视角 |
-| **质量保障** | 双重审核机制（Claude 初审 + Codex 终审） |
-| **全自动闭环** | 拆解 → 执行 → 审核 → 重试，无需人工干预 |
+让 **Claude (Opus)** 作为架构师调度 **GLM** 执行代码任务、**Codex** 审核代码质量，<br>形成**自动化的三方协作闭环**。
 
-## 角色分工
+[快速开始](#快速开始) • [核心特性](#核心特性) • [配置指南](#配置指南) • [工具详解](#工具详解)
 
+</div>
+
+---
+
+## 🌟 核心特性
+
+GLM-CODEX-MCP 通过连接三大模型，构建了一个高效、低成本且高质量的代码生成与审核流水线：
+
+| 维度 | 价值说明 |
+| :--- | :--- |
+| **🧠 成本优化** | **Opus** 负责高智商思考与调度（贵但强），**GLM** 负责繁重的代码执行（量大管饱）。 |
+| **🧩 能力互补** | **Opus** 补足 **GLM** 的创造力短板，**Codex** 提供独立的第三方审核视角。 |
+| **🛡️ 质量保障** | 引入双重审核机制：**Claude 初审** + **Codex 终审**，确保代码健壮性。 |
+| **🔄 全自动闭环** | 支持 `拆解` → `执行` → `审核` → `重试` 的全自动流程，最大程度减少人工干预。 |
+
+## 🤖 角色分工与协作
+
+在这个体系中，每个模型都有明确的职责：
+
+*   **Claude (Opus)**: 👑 **架构师 / 协调者**
+    *   负责需求分析、任务拆解、Prompt 优化以及最终决策。
+*   **GLM-4.7**: 🔨 **执行者**
+    *   负责具体的代码生成、修改、批量任务处理。
+*   **Codex (OpenAI)**: ⚖️ **审核官**
+    *   负责独立的代码质量把关，提供客观的 Code Review。
+
+### 协作流程图
+
+```mermaid
+graph TD
+    User[用户需求] --> Claude[Claude (Opus)]
+    Claude -- 1. 拆解任务 & 生成 Prompt --> GLM[GLM (执行者)]
+    GLM -- 2. 返回代码/结果 --> Claude
+    Claude -- 3. 初审 --> Check{初审通过?}
+    Check -- No (明显问题) --> ClaudeFix[Claude 直接修复]
+    Check -- Yes --> Codex[Codex (审核官)]
+    ClaudeFix --> Codex
+    Codex -- 4. 深度 Review --> Review{审核通过?}
+    Review -- Yes --> Done[任务完成]
+    Review -- ⚠️ 建议优化 --> ClaudeOpt[Claude 分析并优化]
+    Review -- ❌ 需要修改 --> RootCause{问题根因?}
+    ClaudeOpt --> Codex
+    RootCause -- 简单 --> ClaudeFix
+    RootCause -- 复杂 --> Claude
 ```
-Claude (Opus)     →  架构师 + 初审官 + 终审官 + 协调者
-GLM-4.7           →  代码执行者（生成、修改、批量任务）
-Codex (OpenAI)    →  独立代码审核者（质量把关）
-```
 
-## 快速开始
+## 🚀 快速开始
 
-### 0. 前置要求
+### 1. 前置要求
 
-请确保您已成功安装和配置 Claude Code 与 Codex 两个编程工具：
+在开始之前，请确保您已安装以下工具：
 
-- [Claude Code 安装指南](https://code.claude.com/docs)
-- [Codex CLI 安装指南](https://developers.openai.com/codex/quickstart)
-
-> [!IMPORTANT]
-> 请确保您的 Claude Code 版本在 **v2.0.56** 以上；Codex CLI 版本在 **v0.61.0** 以上！
-
-请确保您已成功安装 [uv](https://docs.astral.sh/uv/) 工具：
-
-**Windows** 在 PowerShell 中运行以下命令：
-
-```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-
-**Linux/macOS** 使用 curl/wget 下载并安装：
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh  # 使用 curl
-
-wget -qO- https://astral.sh/uv/install.sh | sh   # 使用 wget
-```
+*   **uv**: 极速 Python 包管理器 ([安装指南](https://docs.astral.sh/uv/))
+    *   Windows: `powershell -c "irm https://astral.sh/uv/install.ps1 | iex"`
+    *   macOS/Linux: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+*   **Claude Code**: 版本 **≥ v2.0.56** ([安装指南](https://code.claude.com/docs))
+*   **Codex CLI**: 版本 **≥ v0.61.0** ([安装指南](https://developers.openai.com/codex/quickstart))
+*   **GLM API Token**: 从 [智谱 AI](https://open.bigmodel.cn) 获取。
 
 > [!NOTE]
-> 我们极力推荐 Windows 用户在 WSL 中运行本项目！
+> Windows 用户强烈推荐在 **WSL** 环境中运行本项目以获得最佳体验。
 
-此外，您还需要：
+### 2. 安装 MCP 服务器
 
-- **GLM API Token**（从 [智谱 AI](https://open.bigmodel.cn) 获取）
+我们只需安装本项目 `glm-codex-mcp` 即可。它内部集成了对系统 `codex` 命令的调用。
 
-### 1. 配置 GLM
+```bash
+claude mcp add glm-codex -s user --transport stdio -- uvx --from git+https://github.com/FredericMN/GLM-CODEX-MCP.git glm-codex-mcp
+```
 
-**方式一：配置文件（推荐）**
+### 3. 配置 GLM
 
+推荐使用 **配置文件** 方式进行管理。
+
+**创建配置目录**:
 ```bash
 # Windows
 mkdir %USERPROFILE%\.glm-codex-mcp
@@ -68,11 +96,10 @@ mkdir %USERPROFILE%\.glm-codex-mcp
 mkdir -p ~/.glm-codex-mcp
 ```
 
-创建配置文件 `~/.glm-codex-mcp/config.toml`：
-
+**创建配置文件** `~/.glm-codex-mcp/config.toml`:
 ```toml
 [glm]
-api_token = "your-glm-api-token"
+api_token = "your-glm-api-token"  # 必填
 base_url = "https://open.bigmodel.cn/api/anthropic"
 model = "glm-4.7"
 
@@ -80,58 +107,27 @@ model = "glm-4.7"
 CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1"
 ```
 
-**方式二：环境变量**
+### 4. 验证安装
 
-```bash
-# Windows PowerShell
-$env:GLM_API_TOKEN = "your-glm-api-token"
-$env:GLM_BASE_URL = "https://open.bigmodel.cn/api/anthropic"
-$env:GLM_MODEL = "glm-4.7"
-
-# macOS/Linux
-export GLM_API_TOKEN="your-glm-api-token"
-export GLM_BASE_URL="https://open.bigmodel.cn/api/anthropic"
-export GLM_MODEL="glm-4.7"
-```
-
-### 2. 安装 MCP
-
-#### 2.1 安装 CodexMCP（Codex 工具依赖）
-
-```bash
-claude mcp add codex -s user --transport stdio -- uvx --from git+https://github.com/GuDaStudio/codexmcp.git codexmcp
-```
-
-#### 2.2 安装 GLM-CODEX-MCP
-
-```bash
-claude mcp add glm-codex -s user --transport stdio -- uvx --from git+https://github.com/FredericMN/GLM-CODEX-MCP.git glm-codex-mcp
-```
-
-#### 2.3 验证安装
-
-在终端中运行：
+运行以下命令检查 MCP 服务器状态：
 
 ```bash
 claude mcp list
 ```
 
-> [!IMPORTANT]
-> 如果看到如下描述，说明安装成功！
-> ```
-> codex: uvx --from git+https://github.com/GuDaStudio/codexmcp.git codexmcp - ✓ Connected
-> glm-codex: uvx --from git+https://github.com/FredericMN/GLM-CODEX-MCP.git glm-codex-mcp - ✓ Connected
-> ```
+✅ 看到以下输出即表示安装成功：
+```text
+glm-codex: ... - ✓ Connected
+```
 
-### 3. 配置权限（可选）
+### 5. (可选) 权限配置
 
-在 `~/.claude/settings.json` 中添加自动允许，使 Claude Code 可以自动与工具交互：
+为获得流畅体验，可在 `~/.claude/settings.json` 中添加自动授权：
 
 ```json
 {
   "permissions": {
     "allow": [
-      "mcp__codex__codex",
       "mcp__glm-codex__glm",
       "mcp__glm-codex__codex"
     ]
@@ -139,78 +135,39 @@ claude mcp list
 }
 ```
 
-## MCP 工具
+## 🛠️ 工具详解
 
-### glm
+### `glm` - 代码执行者
 
-调用 GLM-4.7 执行代码生成或修改任务。
+调用 GLM-4.7 模型执行具体的代码生成或修改任务。
 
-**参数：**
 | 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| PROMPT | string | ✅ | - | 任务指令 |
-| cd | Path | ✅ | - | 工作目录 |
-| sandbox | string | - | workspace-write | 沙箱策略 |
-| SESSION_ID | string | - | "" | 会话 ID |
-| return_all_messages | bool | - | false | 返回完整消息 |
+| :--- | :--- | :---: | :--- | :--- |
+| `PROMPT` | string | ✅ | - | 具体的任务指令和代码要求 |
+| `cd` | Path | ✅ | - | 目标工作目录 |
+| `sandbox` | string | - | `workspace-write` | 沙箱策略，默认允许写入 |
+| `SESSION_ID` | string | - | `""` | 会话 ID，用于维持多轮对话上下文 |
+| `return_all_messages` | bool | - | `false` | 是否返回完整的对话历史（用于调试） |
 
-### codex
+### `codex` - 代码审核者
 
-调用 Codex 进行代码审核。
+调用 Codex 进行独立且严格的代码审查。
 
-**参数：**
 | 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| PROMPT | string | ✅ | - | 审核任务描述 |
-| cd | Path | ✅ | - | 工作目录 |
-| sandbox | string | - | read-only | 沙箱策略 |
-| SESSION_ID | string | - | "" | 会话 ID |
-| skip_git_repo_check | bool | - | true | 允许非 Git 仓库 |
-| return_all_messages | bool | - | false | 返回完整消息 |
-| image | List[Path] | - | [] | 附加图片 |
-| model | string | - | "" | 指定模型 |
-| yolo | bool | - | false | 跳过沙箱 |
-| profile | string | - | "" | 配置文件名称 |
-
-## 协作流程
-
-```
-用户需求
-    │
-    ▼
-1. Claude 分析需求，拆解为子任务
-    │
-    ▼
-2. Claude 为子任务生成精确 Prompt（含边界管控）
-    │
-    ▼
-3. 调用 GLM 工具执行代码任务  ◄───────────────┐
-    │                                         │
-    ▼                                         │
-4. GLM 返回结果 → Claude 初审                  │
-    │                                         │
-    ├─ 有明显问题 → Claude 直接修改             │
-    │                                         │
-    ▼                                         │
-5. 调用 Codex 工具深度 review                  │
-    │                                         │
-    ├── ✅ 通过 → 完成任务                     │
-    │                                         │
-    ├── ⚠️ 建议优化 → Claude 分析并修改         │
-    │                                         │
-    └── ❌ 需要修改 → Claude 分析根因 ──────────┤
-                        │                     │
-                        ├─ 简单问题 → 直接修改 ┘
-                        │
-                        └─ 复杂问题 → 优化 Prompt 重新调用 GLM
-```
+| :--- | :--- | :---: | :--- | :--- |
+| `PROMPT` | string | ✅ | - | 审核任务描述 |
+| `cd` | Path | ✅ | - | 目标工作目录 |
+| `sandbox` | string | - | `read-only` | **强制只读**，严禁审核者修改代码 |
+| `SESSION_ID` | string | - | `""` | 会话 ID |
+| `skip_git_repo_check` | bool | - | `true` | 是否允许在非 Git 仓库运行 |
+| `image` | List[Path]| - | `[]` | 附加图片列表（用于 UI 审查等） |
 
 ## 全局推荐提示词
 
 <details>
 <summary>点击展开全局提示词配置（推荐添加到 ~/.claude/CLAUDE.md）</summary>
 
-```markdown
+````markdown
 # GLM-CODEX-MCP 协作指南
 
 ## 核心规则
@@ -380,35 +337,36 @@ Codex 和 GLM 的意见**仅供参考**。你必须有自己的判断，批判�
 - **工作目录**：确保 `cd` 参数指向正确的项目目录
 - **独立思考**：对工具的建议要有自己的判断，不盲从
 - **工具识别**：通过 `tool` 字段区分是 `glm` 还是 `codex` 的返回
-```
+````
 
 </details>
 
-## 开发
+## 🧑‍💻 开发与贡献
+
+欢迎提交 Issue 和 Pull Request！
 
 ```bash
-# 克隆仓库
+# 1. 克隆仓库
 git clone https://github.com/FredericMN/GLM-CODEX-MCP.git
 cd GLM-CODEX-MCP
 
-# 安装依赖
+# 2. 安装依赖 (使用 uv)
 uv sync
 
-# 运行测试
+# 3. 运行测试
 uv run pytest
 
-# 本地运行
+# 4. 本地调试运行
 uv run glm-codex-mcp
 ```
 
-## 参考资源
+## 📚 参考资源
 
-- [CodexMCP](https://github.com/GuDaStudio/codexmcp) - 核心参考实现
-- [FastMCP](https://github.com/jlowin/fastmcp) - MCP 框架
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code)
-- [Codex CLI](https://developers.openai.com/codex/quickstart)
-- [智谱 AI](https://open.bigmodel.cn) - GLM API
+- **CodexMCP**: [GitHub](https://github.com/GuDaStudio/codexmcp) - 核心参考实现
+- **FastMCP**: [GitHub](https://github.com/jlowin/fastmcp) - 高效的 MCP 框架
+- **GLM API**: [智谱 AI](https://open.bigmodel.cn) - 强大的国产大模型
+- **Claude Code**: [Documentation](https://docs.anthropic.com/en/docs/claude-code)
 
-## License
+## 📄 License
 
 MIT
