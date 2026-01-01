@@ -23,15 +23,40 @@ Codex (OpenAI)    →  独立代码审核者（质量把关）
 
 ## 快速开始
 
-### 1. 前置要求
+### 0. 前置要求
 
-- Python 3.12+
-- [uv](https://docs.astral.sh/uv/) 包管理器
-- Claude Code CLI（已安装并登录）
-- Codex CLI（已安装并登录）
-- GLM API Token（从[智谱 AI](https://open.bigmodel.cn) 获取）
+请确保您已成功安装和配置 Claude Code 与 Codex 两个编程工具：
 
-### 2. 配置 GLM
+- [Claude Code 安装指南](https://code.claude.com/docs)
+- [Codex CLI 安装指南](https://developers.openai.com/codex/quickstart)
+
+> [!IMPORTANT]
+> 请确保您的 Claude Code 版本在 **v2.0.56** 以上；Codex CLI 版本在 **v0.61.0** 以上！
+
+请确保您已成功安装 [uv](https://docs.astral.sh/uv/) 工具：
+
+**Windows** 在 PowerShell 中运行以下命令：
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+**Linux/macOS** 使用 curl/wget 下载并安装：
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh  # 使用 curl
+
+wget -qO- https://astral.sh/uv/install.sh | sh   # 使用 wget
+```
+
+> [!NOTE]
+> 我们极力推荐 Windows 用户在 WSL 中运行本项目！
+
+此外，您还需要：
+
+- **GLM API Token**（从 [智谱 AI](https://open.bigmodel.cn) 获取）
+
+### 1. 配置 GLM
 
 **方式一：配置文件（推荐）**
 
@@ -69,27 +94,44 @@ export GLM_BASE_URL="https://open.bigmodel.cn/api/anthropic"
 export GLM_MODEL="glm-4.7"
 ```
 
-### 3. 安装 MCP
+### 2. 安装 MCP
+
+#### 2.1 安装 CodexMCP（Codex 工具依赖）
 
 ```bash
-# 从 GitHub 安装
-claude mcp add glm-codex -s user -- uvx --from git+https://github.com/your-username/glm-codex-mcp.git glm-codex-mcp
+claude mcp add codex -s user --transport stdio -- uvx --from git+https://github.com/GuDaStudio/codexmcp.git codexmcp
+```
 
-# 或从本地安装（开发模式）
-claude mcp add glm-codex -s user -- uv run --directory /path/to/glm-codex-mcp glm-codex-mcp
+#### 2.2 安装 GLM-CODEX-MCP
 
-# 验证安装
+```bash
+claude mcp add glm-codex -s user --transport stdio -- uvx --from git+https://github.com/FredericMN/GLM-CODEX-MCP.git glm-codex-mcp
+```
+
+#### 2.3 验证安装
+
+在终端中运行：
+
+```bash
 claude mcp list
 ```
 
-### 4. 配置权限（可选）
+> [!IMPORTANT]
+> 如果看到如下描述，说明安装成功！
+> ```
+> codex: uvx --from git+https://github.com/GuDaStudio/codexmcp.git codexmcp - ✓ Connected
+> glm-codex: uvx --from git+https://github.com/FredericMN/GLM-CODEX-MCP.git glm-codex-mcp - ✓ Connected
+> ```
 
-在 `~/.claude/settings.json` 中添加自动允许：
+### 3. 配置权限（可选）
+
+在 `~/.claude/settings.json` 中添加自动允许，使 Claude Code 可以自动与工具交互：
 
 ```json
 {
   "permissions": {
     "allow": [
+      "mcp__codex__codex",
       "mcp__glm-codex__glm",
       "mcp__glm-codex__codex"
     ]
@@ -111,7 +153,6 @@ claude mcp list
 | sandbox | string | - | workspace-write | 沙箱策略 |
 | SESSION_ID | string | - | "" | 会话 ID |
 | return_all_messages | bool | - | false | 返回完整消息 |
-| image | List[Path] | - | [] | 附加图片 |
 
 ### codex
 
@@ -160,8 +201,8 @@ claude mcp list
 
 ```bash
 # 克隆仓库
-git clone https://github.com/your-username/glm-codex-mcp.git
-cd glm-codex-mcp
+git clone https://github.com/FredericMN/GLM-CODEX-MCP.git
+cd GLM-CODEX-MCP
 
 # 安装依赖
 uv sync
