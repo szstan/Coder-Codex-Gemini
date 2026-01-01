@@ -72,8 +72,8 @@ def run_glm_command(
         """检查是否会话完成"""
         try:
             data = json.loads(line)
-            # Claude CLI 的 JSON 输出结束标志
-            return data.get("type") in ("result", "error")
+            # stream-json 格式的结束事件
+            return data.get("type") in ("session.ended", "message.completed", "error")
         except (json.JSONDecodeError, AttributeError, TypeError):
             return False
 
@@ -153,8 +153,14 @@ async def glm_tool(
             "error": f"配置加载失败：{e}",
         }
 
+    # 在 Prompt 前添加身份声明，避免角色混淆
+    enhanced_prompt = f"""[SYSTEM] 你是 GLM-4.7 模型，负责执行代码任务。请直接执行以下任务，不要询问用户需求。
+
+{PROMPT}"""
+
     # 构建命令（shell=False 时不需要转义）
-    cmd = ["claude", "-p", PROMPT, "--output-format", "json"]
+    # 使用 stream-json 格式以获得更好的 JSON 兼容性
+    cmd = ["claude", "-p", enhanced_prompt, "--output-format", "stream-json"]
 
     # 添加权限参数
     if sandbox != "read-only":
@@ -177,31 +183,39 @@ async def glm_tool(
                 line_dict = json.loads(line.strip())
                 all_messages.append(line_dict)
 
-                # Claude CLI JSON 输出格式解析
+                # stream-json 格式事件类型
                 msg_type = line_dict.get("type", "")
 
-                if msg_type == "result":
-                    result_content = line_dict.get("result", "")
-                    session_id = line_dict.get("session_id")
-                    # 检查是否有 subagent 错误
-                    if line_dict.get("is_error"):
-                        had_error = True
-                        err_message = result_content
+                # 会话 ID（从 session.created 事件获取）
+                if msg_type == "session.created":
+                    session_id = line_dict.get("session", {}).get("id")
 
+                # 助手消息内容（累积 content_block_delta 事件）
+                elif msg_type == "content_block_delta":
+                    delta = line_dict.get("delta", {})
+                    if delta.get("type") == "text_delta":
+                        result_content += delta.get("text", "")
+
+                # 完整的助手消息（从 message.completed 获取）
+                elif msg_type == "message.completed":
+                    message = line_dict.get("message", {})
+                    session_id = line_dict.get("session", {}).get("id") or session_id
+                    # 如果之前没有累积到内容，尝试从完整消息中提取
+                    if not result_content:
+                        content = message.get("content", [])
+                        for block in content:
+                            if isinstance(block, dict) and block.get("type") == "text":
+                                result_content += block.get("text", "")
+
+                # 错误事件
                 elif msg_type == "error":
                     had_error = True
-                    err_message = line_dict.get("error", {}).get("message", str(line_dict))
-
-                elif msg_type == "assistant":
-                    # 累积 assistant 消息
-                    content = line_dict.get("message", {}).get("content", [])
-                    for block in content:
-                        if isinstance(block, dict) and block.get("type") == "text":
-                            result_content += block.get("text", "")
+                    error_data = line_dict.get("error", {})
+                    err_message = error_data.get("message", str(line_dict))
 
             except json.JSONDecodeError:
-                # JSON 解析失败也记录为错误（可能有非 JSON 输出）
-                err_message += f"\n\n[json decode error] {line}"
+                # stream-json 可能包含非 JSON 的状态信息，忽略
+                # 只在完全没有有效输出时才记录为错误
                 continue
 
             except Exception as error:
@@ -220,13 +234,10 @@ async def glm_tool(
     if had_error:
         success = False
 
-    # 如果有解析错误但没有其他严重错误，记录但不影响成功判定
-    # 因为 Claude CLI 可能输出进度信息等非 JSON 内容
-
     # 验证结果
     if session_id is None:
         success = False
-        err_message = "未能获取 SESSION_ID。\n\n" + err_message
+        err_message = "未能获取 SESSION_ID。可能 GLM API 未正确返回流式 JSON 事件。\n\n" + err_message
 
     if not result_content and success:
         success = False
