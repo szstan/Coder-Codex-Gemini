@@ -106,9 +106,6 @@ flowchart TB
 *   **Codex CLI**: 版本 **≥ v0.61.0** ([安装指南](https://developers.openai.com/codex/quickstart))
 *   **GLM API Token**: 从 [智谱 AI](https://open.bigmodel.cn) 获取。
 
-> [!NOTE]
-> Windows 用户强烈推荐在 **WSL** 环境中运行本项目以获得最佳体验。
-
 ### 2. 安装 MCP 服务器
 
 我们只需安装本项目 `glm-codex-mcp` 即可。它内部集成了对系统 `codex` 命令的调用。
