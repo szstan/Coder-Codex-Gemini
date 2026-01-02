@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 import json
-import os
 import queue
 import shutil
 import subprocess
@@ -144,6 +143,7 @@ def run_glm_command(
     cwd: Path | None = None,
     timeout: int = 300,
     max_duration: int = 1800,
+    prompt: str = "",
 ) -> Generator[str, None, tuple[Optional[int], int]]:
     """执行 GLM 命令并流式返回输出
 
@@ -153,6 +153,7 @@ def run_glm_command(
         cwd: 工作目录
         timeout: 空闲超时（秒），无输出超过此时间触发超时，默认 300 秒（5 分钟）
         max_duration: 总时长硬上限（秒），默认 1800 秒（30 分钟），0 表示无限制
+        prompt: 通过 stdin 传递的 prompt 内容
 
     Yields:
         输出行
@@ -177,7 +178,7 @@ def run_glm_command(
     process = subprocess.Popen(
         popen_cmd,
         shell=False,
-        stdin=subprocess.DEVNULL,
+        stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         universal_newlines=True,
@@ -185,6 +186,20 @@ def run_glm_command(
         env=env,
         cwd=cwd,
     )
+
+    # 通过 stdin 传递 prompt，然后关闭 stdin
+    if process.stdin:
+        try:
+            if prompt:
+                process.stdin.write(prompt)
+        except (BrokenPipeError, OSError):
+            # 子进程可能已退出，忽略写入错误
+            pass
+        finally:
+            try:
+                process.stdin.close()
+            except (BrokenPipeError, OSError):
+                pass
 
     output_queue: queue.Queue[str | None] = queue.Queue()
     raw_output_lines = 0
@@ -408,13 +423,7 @@ async def glm_tool(
     if SESSION_ID:
         cmd.extend(["-r", SESSION_ID])
 
-    # PROMPT 作为位置参数放在最后
-    # Windows 下需要将换行符转义，避免命令行截断
-    if os.name == "nt":
-        escaped_prompt = PROMPT.replace('\r\n', '\\n').replace('\n', '\\n')
-        cmd.append(escaped_prompt)
-    else:
-        cmd.append(PROMPT)
+    # PROMPT 通过 stdin 传递，不再作为命令行参数
 
     # 执行循环（支持重试）
     retries = 0
@@ -435,7 +444,7 @@ async def glm_tool(
         last_lines: list[str] = []
 
         try:
-            gen = run_glm_command(cmd, env, cd, timeout, max_duration)
+            gen = run_glm_command(cmd, env, cd, timeout, max_duration, prompt=PROMPT)
             try:
                 while True:
                     line = next(gen)

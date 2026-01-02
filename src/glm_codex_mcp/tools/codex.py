@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 import json
-import os
 import queue
 import re
 import shutil
@@ -140,6 +139,7 @@ def run_codex_command(
     cmd: list[str],
     timeout: int = 300,
     max_duration: int = 1800,
+    prompt: str = "",
 ) -> Generator[str, None, tuple[Optional[int], int]]:
     """执行 Codex 命令并流式返回输出
 
@@ -147,6 +147,7 @@ def run_codex_command(
         cmd: 命令和参数列表
         timeout: 空闲超时（秒），无输出超过此时间触发超时，默认 300 秒（5 分钟）
         max_duration: 总时长硬上限（秒），默认 1800 秒（30 分钟），0 表示无限制
+        prompt: 通过 stdin 传递的 prompt 内容
 
     Yields:
         输出行
@@ -170,12 +171,26 @@ def run_codex_command(
     process = subprocess.Popen(
         popen_cmd,
         shell=False,
-        stdin=subprocess.DEVNULL,
+        stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         universal_newlines=True,
         encoding='utf-8',
     )
+
+    # 通过 stdin 传递 prompt，然后关闭 stdin
+    if process.stdin:
+        try:
+            if prompt:
+                process.stdin.write(prompt)
+        except (BrokenPipeError, OSError):
+            # 子进程可能已退出，忽略写入错误
+            pass
+        finally:
+            try:
+                process.stdin.close()
+            except (BrokenPipeError, OSError):
+                pass
 
     output_queue: queue.Queue[str | None] = queue.Queue()
     raw_output_lines = 0
@@ -416,13 +431,7 @@ async def codex_tool(
     if SESSION_ID:
         cmd.extend(["resume", str(SESSION_ID)])
 
-    # PROMPT 作为位置参数
-    # Windows 下需要将换行符转义，避免命令行截断
-    if os.name == "nt":
-        escaped_prompt = PROMPT.replace('\r\n', '\\n').replace('\n', '\\n')
-        cmd += ['--', escaped_prompt]
-    else:
-        cmd += ['--', PROMPT]
+    # PROMPT 通过 stdin 传递，不再作为命令行参数
 
     # 执行循环（支持重试）
     retries = 0
@@ -442,7 +451,7 @@ async def codex_tool(
         last_lines: list[str] = []
 
         try:
-            gen = run_codex_command(cmd, timeout=timeout, max_duration=max_duration)
+            gen = run_codex_command(cmd, timeout=timeout, max_duration=max_duration, prompt=PROMPT)
             try:
                 while True:
                     line = next(gen)
