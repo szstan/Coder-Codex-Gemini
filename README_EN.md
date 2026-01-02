@@ -38,8 +38,8 @@ In this system, each model has a clear responsibility:
     *   Responsible for requirement analysis, task decomposition, prompt optimization, and final decision-making.
 *   **GLM-4.7**: 🔨 **Executor**
     *   Responsible for concrete code generation, modification, and batch task processing.
-*   **Codex (OpenAI)**: ⚖️ **Reviewer**
-    *   Responsible for independent code quality control and providing objective Code Reviews.
+*   **Codex (OpenAI)**: ⚖️ **Reviewer / Senior Code Consultant**
+    *   Responsible for independent code quality control, providing objective Code Reviews, and serving as a consultant for architecture design and complex solutions.
 
 ### Collaboration Workflow
 
@@ -258,24 +258,21 @@ cp -r skills/glm-codex-workflow ~/.claude/skills/
 
 ## GLM-CODEX Collaboration
 
-**Workflow Enforcement**: For any code-related request, you must first load the `glm-codex-workflow` Skill to get the complete collaboration guide, then decide whether to call GLM/Codex tools. Even if the user directly says "use GLM" or "call Codex", you must analyze the task according to the Skill guide before executing the call.
+Code/document modification tasks will automatically trigger the `glm-codex-workflow` Skill.
 
-GLM is your code executor, Codex is your code reviewer. **All code decisions belong to you (Claude)**.
+GLM is your code executor, Codex is your code reviewer. **All decisions belong to you (Claude)**.
 
-When performing code development tasks, the `glm-codex-workflow` Skill will automatically trigger.
+### Core Workflow
+
+1. **GLM Executes**: Delegate all modification tasks (code/docs) to GLM
+2. **Claude Verifies**: Quick check after GLM completes, fix issues yourself, continue to next task
+3. **Codex Reviews**: Call review after milestone development
 
 ### Quick Reference
 
-- **GLM**: Code generation/modification, `sandbox=workspace-write`
+- **GLM**: Execute modifications, `sandbox=workspace-write`
 - **Codex**: Code review, `sandbox=read-only` (no modifications allowed)
 - **Session Reuse**: Save `SESSION_ID` to maintain context
-
-### Core Principles
-
-1. **All code tasks should be delegated to GLM for execution**, quickly verify results after GLM completes before moving to next task
-2. GLM/Codex opinions are for reference only; you must judge independently
-3. Recommend calling Codex review after coding
-4. If Codex points out issues, fix and review again
 
 ### Retry and Error Handling
 
@@ -283,337 +280,22 @@ When performing code development tasks, the `glm-codex-workflow` Skill will auto
 - **GLM**: No retry by default (has write side effects), can enable via `max_retries`
 - **Structured Errors**: Returns `error_kind` and `error_detail` on failure for troubleshooting
 
-### Pre-coding Preparation (Recommended)
+### Pre-coding Preparation (Recommended for Complex Tasks)
 
-Before calling GLM for complex tasks, it's recommended to:
-1. Search for affected symbols/entry points globally (e.g., `grep "function_name" -r`)
+1. Search for affected symbols/entry points globally
 2. List all files that need modification
-3. Specify clear "fix/development checklist" in PROMPT
-4. **For complex tasks, consider discussing with Codex first to clarify the plan before delegating to GLM**
+3. Specify clear modification checklist in PROMPT
+4. **Consult Codex for complex problems**: Codex is not only a reviewer but also a senior code consultant. Discuss architecture design or complex solutions before delegating to GLM
 
-This improves GLM's execution accuracy and reduces omissions.
+### Independent Decision
+
+GLM/Codex opinions are for reference only. You (Claude) are the final decision maker, think critically and make optimal decisions.
 ```
 
 **Advantages**:
 - Non-code tasks don't load collaboration guide (~180 lines → 20 lines, ~80% token savings)
 - Code tasks auto-trigger, no manual invocation needed
 - Detailed specs loaded on-demand, progressive disclosure
-
----
-
-### Option 2: Traditional Option
-
-Add complete prompts directly to CLAUDE.md, loaded every conversation.
-
-<details>
-<summary>Click to expand full prompt configuration</summary>
-
-````markdown
-# GLM-CODEX-MCP Collaboration Guide
-
-## Core Rules
-
-**Workflow Enforcement**: For any code-related request, you must analyze the task according to this guide before calling GLM/Codex tools. Even if the user directly says "use GLM" or "call Codex", you must first understand the requirements, follow the workflow, then execute the call.
-
-GLM is your code executor, Codex is your code reviewer. **All code decisions belong to you (Claude)**.
-
-**Role Division**:
-- You (Claude/Opus): Architect + Coordinator + Final Decision Maker
-- GLM-4.7: Code Executor (High volume capacity, strong execution)
-- Codex: Independent Reviewer (Third-party perspective, quality gatekeeper)
-
-## Collaboration Workflow
-
-**1. Pre-coding (Optional)**
-
-For complex tasks, analyze and decompose first, then delegate to GLM after clarifying the plan.
-
-**2. During Coding**
-
-- **Simple Tasks**: Prefer calling GLM to execute.
-- **Batch/Repetitive/Complex Tasks**: Call GLM to execute; you are responsible for providing clear, precise Prompts.
-- **Unclear Requirements**: Understand and decompose first, then delegate to GLM.
-- **After GLM Execution**: Quickly verify results. Fix immediately if issues found; otherwise continue.
-
-**3. Post-coding (Recommended)**
-
-After overall changes or stage development, **call Codex for review**:
-- Check code quality (readability, maintainability, potential bugs)
-- Assess requirement completion
-- Give clear verdict: ✅ Approved / ⚠️ Suggest Optimization / ❌ Needs Fix
-
-**If Codex points out issues**: Fix and call Codex review again, iterate until approved.
-
-**4. Independent Judgment**
-
-Opinions from Codex and GLM are **for reference only**. You must use your own judgment, analyze suggestions reasonably, and not follow blindly.
-
-## Tool Usage Standards
-
-### GLM Tool (Code Execution)
-
-**Timing**: Batch code generation, repetitive modifications, clearly defined feature implementation.
-
-**Parameters**:
-- PROMPT (string, required): Task instruction
-- cd (Path, required): Working directory
-- sandbox (string): Sandbox policy, default `workspace-write`
-- SESSION_ID (string): Session ID for multi-turn dialogue, default empty string (new session)
-- return_all_messages (boolean): Return full messages, default False
-
-> **Tip**: Keep the same session (reuse SESSION_ID) for related development tasks or bug fixes to maintain GLM context.
-
-**Return Value**:
-```json
-// On Success (default, return_metrics=false)
-{
-  "success": true,
-  "tool": "glm",
-  "SESSION_ID": "uuid-string",
-  "result": "Response content"
-}
-
-// On Success (with metrics, return_metrics=true)
-{
-  "success": true,
-  "tool": "glm",
-  "SESSION_ID": "uuid-string",
-  "result": "Response content",
-  "metrics": {
-    "ts_start": "2026-01-02T10:00:00.000Z",
-    "ts_end": "2026-01-02T10:00:05.123Z",
-    "duration_ms": 5123,
-    "tool": "glm",
-    "sandbox": "workspace-write",
-    "success": true,
-    "retries": 0,
-    "exit_code": 0,
-    "prompt_chars": 256,
-    "prompt_lines": 10,
-    "result_chars": 1024,
-    "result_lines": 50,
-    "raw_output_lines": 60,
-    "json_decode_errors": 0
-  }
-}
-
-// On Failure (structured error, default)
-{
-  "success": false,
-  "tool": "glm",
-  "error": "Error summary",
-  "error_kind": "idle_timeout | timeout | upstream_error | ...",
-  "error_detail": {
-    "message": "Brief error description",
-    "exit_code": 1,
-    "last_lines": ["Last 20 lines of output..."],
-    "idle_timeout_s": 300,
-    "max_duration_s": 1800
-    // "retries": 1  // Only returned when retries > 0
-  }
-}
-
-// On Failure (with metrics, return_metrics=true)
-{
-  "success": false,
-  "tool": "glm",
-  "error": "Error summary",
-  "error_kind": "idle_timeout | timeout | upstream_error | ...",
-  "error_detail": {
-    "message": "Brief error description",
-    "exit_code": 1,
-    "last_lines": ["Last 20 lines of output..."],
-    "idle_timeout_s": 300,
-    "max_duration_s": 1800
-    // "retries": 1  // Only returned when retries > 0
-  },
-  "metrics": {
-    "ts_start": "2026-01-02T10:00:00.000Z",
-    "ts_end": "2026-01-02T10:00:05.123Z",
-    "duration_ms": 5123,
-    "tool": "glm",
-    "sandbox": "workspace-write",
-    "success": false,
-    "retries": 0,
-    "exit_code": 1,
-    "prompt_chars": 256,
-    "prompt_lines": 10,
-    "json_decode_errors": 0
-  }
-}
-```
-
-**Prompt Template**:
-```
-[SYSTEM] You are a focused and efficient code execution assistant. [Execution Principles] - Execute tasks directly, no chitchat, no asking for clarification - Follow code best practices, maintain code quality - Make implementation decisions autonomously within task scope [Output Standards] - Only output task results and necessary change descriptions - Include diff for code changes (excerpt key parts with explanation if content is large)
-
-Please execute the following code task:
-
-**Task Type**: [New Feature / Bug Fix / Refactor / Other]
-**Target File**: [File Path]
-
-**Specific Requirements**:
-1. [Requirement 1]
-2. [Requirement 2]
-
-**Constraints**:
-- [Constraint 1, e.g.: Only modify function X, do not touch others]
-- [Constraint 2, e.g.: Keep API signature unchanged]
-
-**Acceptance Criteria**:
-- [Criterion 1, e.g.: No performance degradation]
-
-Please strictly modify code within the scope above, and explain changes after completion.
-```
-
-**Usage Norms**:
-- **Must save** `SESSION_ID` for multi-turn dialogue.
-- Check `success` field to judge execution status.
-- Get GLM response from `result` field.
-- Set `return_all_messages=True` for debugging.
-
-### Codex Tool (Code Review)
-
-**Timing**: When code changes are done and independent review is needed.
-
-**Parameters**:
-- PROMPT (string, required): Review task description
-- cd (Path, required): Working directory
-- sandbox (string): Sandbox policy, **MUST** be `read-only` (strictly forbid code modification)
-- SESSION_ID (string): Session ID for multi-turn dialogue, default empty string (new session)
-- return_all_messages (boolean): Return full messages, default False
-- skip_git_repo_check (boolean): Allow non-Git repos, default True
-- image (List[Path]): List of additional image paths, default empty
-- model (string): Specify model, defaults to Codex config
-- yolo (boolean): Run all commands without approval, default False
-- profile (string): Profile name, defaults to default config
-
-**Return Value**:
-```json
-// On Success (default, return_metrics=false)
-{
-  "success": true,
-  "tool": "codex",
-  "SESSION_ID": "uuid-string",
-  "result": "Response content"
-}
-
-// On Success (with metrics, return_metrics=true)
-{
-  "success": true,
-  "tool": "codex",
-  "SESSION_ID": "uuid-string",
-  "result": "Response content",
-  "metrics": {
-    "ts_start": "2026-01-02T10:00:00.000Z",
-    "ts_end": "2026-01-02T10:00:05.123Z",
-    "duration_ms": 5123,
-    "tool": "codex",
-    "sandbox": "read-only",
-    "success": true,
-    "retries": 0,
-    "exit_code": 0,
-    "prompt_chars": 256,
-    "prompt_lines": 10,
-    "result_chars": 1024,
-    "result_lines": 50,
-    "raw_output_lines": 60,
-    "json_decode_errors": 0
-  }
-}
-
-// On Failure (structured error, default)
-{
-  "success": false,
-  "tool": "codex",
-  "error": "Error summary",
-  "error_kind": "idle_timeout | timeout | upstream_error | ...",
-  "error_detail": {
-    "message": "Brief error description",
-    "exit_code": 1,
-    "last_lines": ["Last 20 lines of output..."],
-    "idle_timeout_s": 300,
-    "max_duration_s": 1800
-    // "retries": 1  // Only returned when retries > 0
-  }
-}
-
-// On Failure (with metrics, return_metrics=true)
-{
-  "success": false,
-  "tool": "codex",
-  "error": "Error summary",
-  "error_kind": "idle_timeout | timeout | upstream_error | ...",
-  "error_detail": {
-    "message": "Brief error description",
-    "exit_code": 1,
-    "last_lines": ["Last 20 lines of output..."],
-    "idle_timeout_s": 300,
-    "max_duration_s": 1800
-    // "retries": 1  // Only returned when retries > 0
-  },
-  "metrics": {
-    "ts_start": "2026-01-02T10:00:00.000Z",
-    "ts_end": "2026-01-02T10:00:05.123Z",
-    "duration_ms": 5123,
-    "tool": "codex",
-    "sandbox": "read-only",
-    "success": false,
-    "retries": 0,
-    "exit_code": 1,
-    "prompt_chars": 256,
-    "prompt_lines": 10,
-    "json_decode_errors": 0
-  }
-}
-```
-
-**Prompt Template**:
-```
-Please review the following code changes:
-
-**Changed Files**: [File List]
-**Purpose**: [Brief Description]
-
-**Please Check**:
-1. Code quality (readability, maintainability)
-2. Potential Bugs or edge cases
-3. Requirement completion
-
-**Please give a clear verdict**:
-- ✅ Approved: Code quality is good, can be merged
-- ⚠️ Suggest Optimization: [Specific suggestion]
-- ❌ Needs Fix: [Specific issue]
-```
-
-**Usage Norms**:
-- **Strict Boundary**: Must use `sandbox="read-only"`, Codex is forbidden from modifying code.
-- **Must save** `SESSION_ID` for multi-turn dialogue.
-- Check `success` field to judge review status.
-- Get Codex review verdict from `result` field.
-- Set `return_all_messages=True` for debugging.
-
-## Recommended Usage
-
-**Codex Tool** (Review):
-- Set `return_all_messages=True` to track reasoning process.
-- Used for precise issue localization, debug, code review.
-
-**GLM Tool** (Execute):
-- Set `return_all_messages=True` to track execution process.
-- Used for batch code generation, repetitive edits, rapid prototyping.
-
-## Notes
-
-- **Strict Boundary**: Codex defaults to `sandbox=read-only`, strictly forbidding code modification, only providing diff suggestions.
-- **GLM Writable**: GLM defaults to `workspace-write`, allowing code modification.
-- **Session Management**: Save `SESSION_ID` after each call for multi-turn dialogue.
-- **Working Directory**: Ensure `cd` parameter points to the correct project directory.
-- **Independent Thinking**: Use your own judgment on tool suggestions, do not follow blindly.
-- **Tool Identification**: Distinguish returns via `tool` field (`glm` vs `codex`).
-````
-
-</details>
 
 ## 🧑‍💻 Development & Contribution
 
