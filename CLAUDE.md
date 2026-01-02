@@ -52,7 +52,7 @@ GLM-CODEX-MCP/
 | M0 | 方案设计、技术验证 | ✅ 完成 |
 | M1 | 最小可用版本（glm 工具） | ✅ 完成 |
 | M2 | 集成 codex 工具 | ✅ 完成 |
-| M3 | 协作 Prompt 优化 | 待开发 |
+| M3 | 协作 Prompt 优化 | ✅ 完成 |
 | M4 | 文档、发布 | 🚧 进行中 |
 
 ## 技术要点
@@ -61,6 +61,35 @@ GLM-CODEX-MCP/
 
 - `glm`: 调用 GLM-4.7 执行代码生成/修改，默认 `workspace-write`
 - `codex`: 调用 Codex 进行代码审核，默认 `read-only`
+
+### 新增特性（M3）
+
+#### 结构化错误
+失败时返回 `error_kind` 和 `error_detail`，便于上层决策是否重试：
+```json
+{
+  "success": false,
+  "error": "错误摘要",
+  "error_kind": "timeout | upstream_error | ...",
+  "error_detail": {
+    "message": "错误简述",
+    "exit_code": 1,
+    "last_lines": ["最后20行输出..."],
+    "retries": 0
+  }
+}
+```
+
+#### 重试策略
+- **Codex**：默认允许 1 次重试（只读操作无副作用）
+- **GLM**：默认不重试（有写入副作用），可通过 `max_retries` 显式启用
+
+#### 可观察性指标
+- `return_metrics=True`：在返回值中包含耗时、Prompt 长度等指标
+- `log_metrics=True`：将指标输出到 stderr（JSONL 格式）
+
+#### 防递归调用
+GLM 的 system-prompt 包含约束，防止请求调用工具或声称自己是 Claude。
 
 ### 配置方案
 
@@ -88,3 +117,4 @@ model = "glm-4.7"
 ---
 
 > 📅 项目创建: 2026-01-01
+> 📅 M3 完成: 2026-01-02

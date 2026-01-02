@@ -7,17 +7,24 @@
 from __future__ import annotations
 
 import json
+import os
 import queue
 import re
 import shutil
 import subprocess
+import sys
 import threading
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Annotated, Any, Dict, Generator, List, Literal, Optional
 
 from pydantic import Field
 
+
+# ============================================================================
+# 错误类型定义
+# ============================================================================
 
 class CommandNotFoundError(Exception):
     """命令不存在错误"""
@@ -26,18 +33,126 @@ class CommandNotFoundError(Exception):
 
 class CommandTimeoutError(Exception):
     """命令执行超时错误"""
-    pass
+    def __init__(self, message: str, is_idle: bool = False):
+        super().__init__(message)
+        self.is_idle = is_idle  # 标记是否为空闲超时
 
 
-def run_codex_command(cmd: list[str], timeout: int = 300) -> Generator[str, None, None]:
+# ============================================================================
+# 错误类型枚举
+# ============================================================================
+
+class ErrorKind:
+    """结构化错误类型枚举"""
+    TIMEOUT = "timeout"  # 总时长超时
+    IDLE_TIMEOUT = "idle_timeout"  # 空闲超时（无输出）
+    COMMAND_NOT_FOUND = "command_not_found"
+    UPSTREAM_ERROR = "upstream_error"
+    JSON_DECODE = "json_decode"
+    PROTOCOL_MISSING_SESSION = "protocol_missing_session"
+    EMPTY_RESULT = "empty_result"
+    SUBPROCESS_ERROR = "subprocess_error"
+    UNEXPECTED_EXCEPTION = "unexpected_exception"
+
+
+# ============================================================================
+# 指标收集
+# ============================================================================
+
+class MetricsCollector:
+    """指标收集器"""
+
+    def __init__(self, tool: str, prompt: str, sandbox: str):
+        self.tool = tool
+        self.sandbox = sandbox
+        self.prompt_chars = len(prompt)
+        self.prompt_lines = prompt.count('\n') + 1
+        self.ts_start = datetime.now(timezone.utc)
+        self.ts_end: Optional[datetime] = None
+        self.duration_ms: int = 0
+        self.success: bool = False
+        self.error_kind: Optional[str] = None
+        self.retries: int = 0
+        self.exit_code: Optional[int] = None
+        self.result_chars: int = 0
+        self.result_lines: int = 0
+        self.raw_output_lines: int = 0
+        self.json_decode_errors: int = 0
+
+    def finish(
+        self,
+        success: bool,
+        error_kind: Optional[str] = None,
+        result: str = "",
+        exit_code: Optional[int] = None,
+        raw_output_lines: int = 0,
+        json_decode_errors: int = 0,
+        retries: int = 0,
+    ) -> None:
+        """完成指标收集"""
+        self.ts_end = datetime.now(timezone.utc)
+        self.duration_ms = int((self.ts_end - self.ts_start).total_seconds() * 1000)
+        self.success = success
+        self.error_kind = error_kind
+        self.result_chars = len(result)
+        self.result_lines = result.count('\n') + 1 if result else 0
+        self.exit_code = exit_code
+        self.raw_output_lines = raw_output_lines
+        self.json_decode_errors = json_decode_errors
+        self.retries = retries
+
+    def to_dict(self) -> Dict[str, Any]:
+        """转换为字典"""
+        return {
+            "ts_start": self.ts_start.isoformat() if self.ts_start else None,
+            "ts_end": self.ts_end.isoformat() if self.ts_end else None,
+            "duration_ms": self.duration_ms,
+            "tool": self.tool,
+            "sandbox": self.sandbox,
+            "success": self.success,
+            "error_kind": self.error_kind,
+            "retries": self.retries,
+            "exit_code": self.exit_code,
+            "prompt_chars": self.prompt_chars,
+            "prompt_lines": self.prompt_lines,
+            "result_chars": self.result_chars,
+            "result_lines": self.result_lines,
+            "raw_output_lines": self.raw_output_lines,
+            "json_decode_errors": self.json_decode_errors,
+        }
+
+    def log_to_stderr(self) -> None:
+        """将指标输出到 stderr（JSONL 格式）"""
+        metrics = self.to_dict()
+        # 移除 None 值以减少输出
+        metrics = {k: v for k, v in metrics.items() if v is not None}
+        try:
+            print(json.dumps(metrics, ensure_ascii=False), file=sys.stderr)
+        except Exception:
+            pass  # 静默失败，不影响主流程
+
+
+# ============================================================================
+# 命令执行
+# ============================================================================
+
+def run_codex_command(
+    cmd: list[str],
+    timeout: int = 300,
+    max_duration: int = 1800,
+) -> Generator[str, None, tuple[Optional[int], int]]:
     """执行 Codex 命令并流式返回输出
 
     Args:
         cmd: 命令和参数列表
-        timeout: 超时时间（秒），默认 300 秒（5 分钟）
+        timeout: 空闲超时（秒），无输出超过此时间触发超时，默认 300 秒（5 分钟）
+        max_duration: 总时长硬上限（秒），默认 1800 秒（30 分钟），0 表示无限制
 
     Yields:
         输出行
+
+    Returns:
+        (exit_code, raw_output_lines) 元组
 
     Raises:
         CommandNotFoundError: codex CLI 未安装时抛出
@@ -63,6 +178,7 @@ def run_codex_command(cmd: list[str], timeout: int = 300) -> Generator[str, None
     )
 
     output_queue: queue.Queue[str | None] = queue.Queue()
+    raw_output_lines = 0
     GRACEFUL_SHUTDOWN_DELAY = 0.3
 
     def is_turn_completed(line: str) -> bool:
@@ -75,10 +191,14 @@ def run_codex_command(cmd: list[str], timeout: int = 300) -> Generator[str, None
 
     def read_output() -> None:
         """在单独线程中读取进程输出"""
+        nonlocal raw_output_lines
         if process.stdout:
             for line in iter(process.stdout.readline, ""):
                 stripped = line.strip()
+                # 任意行都入队（触发活动判定），但只计数非空行
                 output_queue.put(stripped)
+                if stripped:
+                    raw_output_lines += 1
                 if is_turn_completed(stripped):
                     # 等待剩余输出被 drain
                     time.sleep(GRACEFUL_SHUTDOWN_DELAY)
@@ -89,19 +209,56 @@ def run_codex_command(cmd: list[str], timeout: int = 300) -> Generator[str, None
     thread = threading.Thread(target=read_output)
     thread.start()
 
+    # 持续读取输出，带双重超时保障
+    start_time = time.time()
+    last_activity_time = time.time()
+    timeout_error: CommandTimeoutError | None = None
+
     while True:
+        now = time.time()
+
+        # 检查总时长硬上限（优先级高）
+        if max_duration > 0 and (now - start_time) >= max_duration:
+            timeout_error = CommandTimeoutError(
+                f"codex 执行超时（总时长超过 {max_duration}s），进程已终止。",
+                is_idle=False
+            )
+            break
+
+        # 检查空闲超时
+        if (now - last_activity_time) >= timeout:
+            timeout_error = CommandTimeoutError(
+                f"codex 空闲超时（{timeout}s 无输出），进程已终止。",
+                is_idle=True
+            )
+            break
+
         try:
             line = output_queue.get(timeout=0.5)
             if line is None:
                 break
-            yield line
+            # 有输出（包括空行），重置空闲计时器
+            last_activity_time = time.time()
+            if line:  # 非空行才 yield
+                yield line
         except queue.Empty:
             if process.poll() is not None and not thread.is_alive():
                 break
 
-    timeout_error: CommandTimeoutError | None = None
+    # 如果超时，终止进程
+    if timeout_error is not None:
+        process.terminate()
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait()
+        thread.join(timeout=5)
+        raise timeout_error
+
+    exit_code: Optional[int] = None
     try:
-        process.wait(timeout=timeout)
+        exit_code = process.wait(timeout=5)  # 此时进程应已结束，短超时即可
     except subprocess.TimeoutExpired:
         process.terminate()
         try:
@@ -109,14 +266,18 @@ def run_codex_command(cmd: list[str], timeout: int = 300) -> Generator[str, None
         except subprocess.TimeoutExpired:
             process.kill()
             process.wait()
-        timeout_error = CommandTimeoutError(f"codex 执行超时（{timeout}s），进程已终止。")
+        # 进程等待超时（罕见情况），视为总时长超时
+        timeout_error = CommandTimeoutError(
+            f"codex 进程等待超时，进程已终止。",
+            is_idle=False
+        )
     finally:
-        thread.join(timeout=timeout)
+        thread.join(timeout=5)
 
     if timeout_error is not None:
         raise timeout_error
 
-    # 读取剩余输出
+    # 读取剩余输出（不再累加 raw_output_lines，避免重复计数）
     while not output_queue.empty():
         try:
             line = output_queue.get_nowait()
@@ -125,6 +286,55 @@ def run_codex_command(cmd: list[str], timeout: int = 300) -> Generator[str, None
         except queue.Empty:
             break
 
+    # 返回退出码和原始输出行数
+    return (exit_code, raw_output_lines)
+
+
+def _build_error_detail(
+    message: str,
+    exit_code: Optional[int] = None,
+    last_lines: Optional[list[str]] = None,
+    json_decode_errors: int = 0,
+    idle_timeout_s: Optional[int] = None,
+    max_duration_s: Optional[int] = None,
+    retries: int = 0,
+) -> Dict[str, Any]:
+    """构建结构化错误详情"""
+    detail: Dict[str, Any] = {"message": message}
+    if exit_code is not None:
+        detail["exit_code"] = exit_code
+    if last_lines:
+        detail["last_lines"] = last_lines[-20:]  # 最多保留 20 行
+    if json_decode_errors > 0:
+        detail["json_decode_errors"] = json_decode_errors
+    if idle_timeout_s is not None:
+        detail["idle_timeout_s"] = idle_timeout_s
+    if max_duration_s is not None:
+        detail["max_duration_s"] = max_duration_s
+    if retries > 0:
+        detail["retries"] = retries
+    return detail
+
+
+# ============================================================================
+# 可重试错误判断
+# ============================================================================
+
+def _is_retryable_error(error_kind: Optional[str], err_message: str) -> bool:
+    """判断错误是否可以重试
+
+    Codex 是只读操作，大部分错误都可以安全重试。
+    排除：命令不存在（需要用户干预）
+    """
+    if error_kind == ErrorKind.COMMAND_NOT_FOUND:
+        return False
+    # 其他错误都可以重试
+    return True
+
+
+# ============================================================================
+# 主工具函数
+# ============================================================================
 
 async def codex_tool(
     PROMPT: Annotated[str, "审核任务描述"],
@@ -139,6 +349,7 @@ async def codex_tool(
         "允许在非 Git 仓库中运行",
     ] = True,
     return_all_messages: Annotated[bool, "是否返回完整消息"] = False,
+    return_metrics: Annotated[bool, "是否在返回值中包含指标数据"] = True,
     image: Annotated[
         Optional[List[Path]],
         Field(description="附加图片文件路径列表"),
@@ -157,8 +368,14 @@ async def codex_tool(
     ] = "",
     timeout: Annotated[
         int,
-        Field(description="超时时间（秒），默认 300 秒（5 分钟）"),
+        Field(description="空闲超时（秒），无输出超过此时间触发超时，默认 300 秒"),
     ] = 300,
+    max_duration: Annotated[
+        int,
+        Field(description="总时长硬上限（秒），默认 1800 秒（30 分钟），0 表示无限制"),
+    ] = 1800,
+    max_retries: Annotated[int, "最大重试次数，默认 1（Codex 只读可安全重试）"] = 1,
+    log_metrics: Annotated[bool, "是否将指标输出到 stderr"] = False,
 ) -> Dict[str, Any]:
     """执行 Codex 代码审核
 
@@ -170,7 +387,11 @@ async def codex_tool(
     - 给出明确结论：✅ 通过 / ⚠️ 建议优化 / ❌ 需要修改
 
     **注意**：Codex 仅审核，严禁修改代码，默认 sandbox 为 read-only
+    **重试策略**：Codex 默认允许 1 次重试（只读操作无副作用）
     """
+    # 初始化指标收集器
+    metrics = MetricsCollector(tool="codex", prompt=PROMPT, sandbox=sandbox)
+
     # 归一化可选参数
     image_list = image or []
 
@@ -197,102 +418,236 @@ async def codex_tool(
 
     # PROMPT 作为位置参数
     # Windows 下需要将换行符转义，避免命令行截断
-    import os
     if os.name == "nt":
         escaped_prompt = PROMPT.replace('\r\n', '\\n').replace('\n', '\\n')
         cmd += ['--', escaped_prompt]
     else:
         cmd += ['--', PROMPT]
 
-    all_messages: list[Dict[str, Any]] = []
-    agent_messages = ""
-    had_error = False
-    err_message = ""
-    thread_id: Optional[str] = None
+    # 执行循环（支持重试）
+    retries = 0
+    last_error: Optional[Dict[str, Any]] = None
+    all_last_lines: list[str] = []
 
-    try:
-        for line in run_codex_command(cmd, timeout=timeout):
+    while retries <= max_retries:
+        all_messages: list[Dict[str, Any]] = []
+        agent_messages = ""
+        had_error = False
+        err_message = ""
+        thread_id: Optional[str] = None
+        exit_code: Optional[int] = None
+        raw_output_lines = 0
+        json_decode_errors = 0
+        error_kind: Optional[str] = None
+        last_lines: list[str] = []
+
+        try:
+            gen = run_codex_command(cmd, timeout=timeout, max_duration=max_duration)
             try:
-                line_dict = json.loads(line.strip())
-                all_messages.append(line_dict)
+                while True:
+                    line = next(gen)
+                    last_lines.append(line)
+                    if len(last_lines) > 20:
+                        last_lines.pop(0)
 
-                item = line_dict.get("item", {})
-                item_type = item.get("type", "")
+                    try:
+                        line_dict = json.loads(line.strip())
+                        all_messages.append(line_dict)
 
-                if item_type == "agent_message":
-                    agent_messages += item.get("text", "")
+                        item = line_dict.get("item", {})
+                        item_type = item.get("type", "")
 
-                if line_dict.get("thread_id") is not None:
-                    thread_id = line_dict.get("thread_id")
+                        if item_type == "agent_message":
+                            agent_messages += item.get("text", "")
 
-                # 错误处理：记录错误但不立即判断成功与否
-                if "fail" in line_dict.get("type", ""):
-                    had_error = True
-                    err_message += "\n\n[codex error] " + line_dict.get("error", {}).get("message", "")
+                        if line_dict.get("thread_id") is not None:
+                            thread_id = line_dict.get("thread_id")
 
-                if "error" in line_dict.get("type", ""):
-                    error_msg = line_dict.get("message", "")
-                    is_reconnecting = bool(re.match(r'^Reconnecting\.\.\.\s+\d+/\d+$', error_msg))
+                        # 错误处理：记录错误但不立即判断成功与否
+                        if "fail" in line_dict.get("type", ""):
+                            had_error = True
+                            err_message += "\n\n[codex error] " + line_dict.get("error", {}).get("message", "")
+                            error_kind = ErrorKind.UPSTREAM_ERROR
 
-                    if not is_reconnecting:
+                        if "error" in line_dict.get("type", ""):
+                            error_msg = line_dict.get("message", "")
+                            is_reconnecting = bool(re.match(r'^Reconnecting\.\.\.\s+\d+/\d+$', error_msg))
+
+                            if not is_reconnecting:
+                                had_error = True
+                                err_message += "\n\n[codex error] " + error_msg
+                                error_kind = ErrorKind.UPSTREAM_ERROR
+
+                    except json.JSONDecodeError:
+                        # JSON 解析失败记录但不影响成功判定
+                        json_decode_errors += 1
+                        err_message += "\n\n[json decode error] " + line
+                        continue
+
+                    except Exception as error:
+                        err_message += f"\n\n[unexpected error] {error}. Line: {line!r}"
                         had_error = True
-                        err_message += "\n\n[codex error] " + error_msg
+                        error_kind = ErrorKind.UNEXPECTED_EXCEPTION
+                        break
+            except StopIteration as e:
+                # 正确捕获生成器返回值
+                if isinstance(e.value, tuple) and len(e.value) == 2:
+                    exit_code, raw_output_lines = e.value
 
-            except json.JSONDecodeError:
-                # JSON 解析失败记录但不影响成功判定
-                # 因为 Codex CLI 可能输出进度信息等非 JSON 内容
-                err_message += "\n\n[json decode error] " + line
+        except CommandNotFoundError as e:
+            metrics.finish(
+                success=False,
+                error_kind=ErrorKind.COMMAND_NOT_FOUND,
+                retries=retries,
+            )
+            if log_metrics:
+                metrics.log_to_stderr()
+
+            result: Dict[str, Any] = {
+                "success": False,
+                "tool": "codex",
+                "error": str(e),
+                "error_kind": ErrorKind.COMMAND_NOT_FOUND,
+                "error_detail": _build_error_detail(str(e)),
+            }
+            if return_metrics:
+                result["metrics"] = metrics.to_dict()
+            return result
+
+        except CommandTimeoutError as e:
+            # 根据异常属性区分空闲超时和总时长超时
+            error_kind = ErrorKind.IDLE_TIMEOUT if e.is_idle else ErrorKind.TIMEOUT
+            had_error = True
+            err_message = str(e)
+            success = False  # 明确设置为失败
+            # 超时可以重试（Codex 只读）
+            if retries < max_retries:
+                all_last_lines = last_lines.copy()
+                last_error = {
+                    "error_kind": error_kind,
+                    "err_message": err_message,
+                    "exit_code": exit_code,
+                    "json_decode_errors": json_decode_errors,
+                    "raw_output_lines": raw_output_lines,
+                }
+                retries += 1
+                time.sleep(0.5 * (2 ** (retries - 1)))
                 continue
-
-            except Exception as error:
-                err_message += f"\n\n[unexpected error] {error}. Line: {line!r}"
-                had_error = True
+            else:
+                # 已达最大重试次数
+                all_last_lines = last_lines.copy()
+                last_error = {
+                    "error_kind": error_kind,
+                    "err_message": err_message,
+                    "exit_code": exit_code,
+                    "json_decode_errors": json_decode_errors,
+                    "raw_output_lines": raw_output_lines,
+                }
                 break
 
-    except CommandNotFoundError as e:
-        return {
-            "success": False,
-            "tool": "codex",
-            "error": str(e),
-        }
+        # 综合判断成功与否
+        success = True
 
-    except CommandTimeoutError as e:
-        return {
-            "success": False,
-            "tool": "codex",
-            "error_type": "timeout",
-            "error": str(e),
-        }
+        if had_error:
+            success = False
 
-    # 综合判断成功与否
-    success = True
+        if thread_id is None:
+            success = False
+            if not error_kind:
+                error_kind = ErrorKind.PROTOCOL_MISSING_SESSION
+            err_message = "未能获取 SESSION_ID。\n\n" + err_message
 
-    if had_error:
-        success = False
+        if not agent_messages:
+            success = False
+            if not error_kind:
+                error_kind = ErrorKind.EMPTY_RESULT
+            err_message = "未能获取 Codex 响应内容。可尝试设置 return_all_messages=True 获取详细信息。\n\n" + err_message
 
-    if thread_id is None:
-        success = False
-        err_message = "未能获取 SESSION_ID。\n\n" + err_message
+        # 检查退出码
+        if exit_code is not None and exit_code != 0 and success:
+            success = False
+            if not error_kind:
+                error_kind = ErrorKind.SUBPROCESS_ERROR
+            err_message = f"进程退出码非零：{exit_code}\n\n" + err_message
 
-    if not agent_messages:
-        success = False
-        err_message = "未能获取 Codex 响应内容。可尝试设置 return_all_messages=True 获取详细信息。\n\n" + err_message
+        if success:
+            # 成功，跳出重试循环
+            break
+        else:
+            # 检查是否可重试
+            if _is_retryable_error(error_kind, err_message) and retries < max_retries:
+                all_last_lines = last_lines.copy()
+                last_error = {
+                    "error_kind": error_kind,
+                    "err_message": err_message,
+                    "exit_code": exit_code,
+                    "json_decode_errors": json_decode_errors,
+                    "raw_output_lines": raw_output_lines,
+                }
+                retries += 1
+                # 指数退避
+                time.sleep(0.5 * (2 ** (retries - 1)))
+            else:
+                # 不可重试或已达到最大重试次数
+                all_last_lines = last_lines.copy()
+                last_error = {
+                    "error_kind": error_kind,
+                    "err_message": err_message,
+                    "exit_code": exit_code,
+                    "json_decode_errors": json_decode_errors,
+                    "raw_output_lines": raw_output_lines,
+                }
+                break
 
+    # 完成指标收集
+    metrics.finish(
+        success=success,
+        error_kind=error_kind,
+        result=agent_messages,
+        exit_code=exit_code,
+        raw_output_lines=raw_output_lines,
+        json_decode_errors=json_decode_errors,
+        retries=retries,
+    )
+    if log_metrics:
+        metrics.log_to_stderr()
+
+    # 构建返回结果
     if success:
-        result: Dict[str, Any] = {
+        result = {
             "success": True,
             "tool": "codex",
             "SESSION_ID": thread_id,
             "result": agent_messages,
         }
     else:
+        # 使用最后一次失败的错误信息
+        if last_error:
+            error_kind = last_error["error_kind"]
+            err_message = last_error["err_message"]
+            exit_code = last_error["exit_code"]
+            json_decode_errors = last_error["json_decode_errors"]
+
         result = {
             "success": False,
             "tool": "codex",
             "error": err_message,
+            "error_kind": error_kind,
+            "error_detail": _build_error_detail(
+                message=err_message.split('\n')[0] if err_message else "未知错误",
+                exit_code=exit_code,
+                last_lines=all_last_lines,
+                json_decode_errors=json_decode_errors,
+                idle_timeout_s=timeout if error_kind == ErrorKind.IDLE_TIMEOUT else None,
+                max_duration_s=max_duration if error_kind == ErrorKind.TIMEOUT else None,
+                retries=retries,
+            ),
         }
 
     if return_all_messages:
         result["all_messages"] = all_messages
+
+    if return_metrics:
+        result["metrics"] = metrics.to_dict()
 
     return result

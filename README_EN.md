@@ -181,6 +181,11 @@ Calls the GLM-4.7 model to execute specific code generation or modification task
 | `sandbox` | string | - | `workspace-write` | Sandbox policy, write allowed by default |
 | `SESSION_ID` | string | - | `""` | Session ID, used to maintain multi-turn context |
 | `return_all_messages` | bool | - | `false` | Whether to return full conversation history (for debugging) |
+| `return_metrics` | bool | - | `true` | Whether to include metrics in return value |
+| `timeout` | int | - | `300` | Idle timeout (seconds), triggers when no output for this duration |
+| `max_duration` | int | - | `1800` | Max duration limit (seconds), default 30 min, 0 for unlimited |
+| `max_retries` | int | - | `0` | Max retry count (GLM defaults to no retry) |
+| `log_metrics` | bool | - | `false` | Whether to output metrics to stderr |
 
 ### `codex` - Code Reviewer
 
@@ -193,7 +198,29 @@ Calls Codex for independent and strict code review.
 | `sandbox` | string | - | `read-only` | **Forced Read-Only**, reviewer forbidden from modifying code |
 | `SESSION_ID` | string | - | `""` | Session ID |
 | `skip_git_repo_check` | bool | - | `true` | Whether to allow running in non-Git repositories |
+| `return_all_messages` | bool | - | `false` | Whether to return full conversation history (for debugging) |
 | `image` | List[Path]| - | `[]` | List of additional images (for UI review, etc.) |
+| `model` | string | - | `""` | Specify model, defaults to Codex's own config |
+| `return_metrics` | bool | - | `true` | Whether to include metrics in return value |
+| `timeout` | int | - | `300` | Idle timeout (seconds), triggers when no output for this duration |
+| `max_duration` | int | - | `1800` | Max duration limit (seconds), default 30 min, 0 for unlimited |
+| `max_retries` | int | - | `1` | Max retry count (Codex defaults to 1 retry) |
+| `log_metrics` | bool | - | `false` | Whether to output metrics to stderr |
+| `yolo` | bool | - | `false` | Run all commands without approval (skip sandbox) |
+| `profile` | string | - | `""` | Config profile name from ~/.codex/config.toml |
+
+### Timeout Mechanism
+
+This project uses a **dual timeout protection** mechanism:
+
+| Timeout Type | Parameter | Default | Description |
+|--------------|-----------|---------|-------------|
+| **Idle Timeout** | `timeout` | 300s | Triggers when no output for this duration; resets on activity |
+| **Max Duration** | `max_duration` | 1800s | Hard limit from start, forcibly terminates regardless of output |
+
+**Error Type Distinction**:
+- `idle_timeout`: Idle timeout (no output)
+- `timeout`: Total duration timeout
 
 ## 📝 Prompt Configuration
 
