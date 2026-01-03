@@ -702,14 +702,16 @@ async def codex_tool(
                                 thread_id = line_dict.get("thread_id")
 
                             # 错误处理：记录错误但不立即判断成功与否
+                            # 注意：AUTH_REQUIRED 优先级最高，一旦设置不再被覆盖
                             if "fail" in line_dict.get("type", ""):
                                 had_error = True
                                 fail_msg = line_dict.get("error", {}).get("message", "")
                                 err_message += "\n\n[codex error] " + fail_msg
-                                error_kind = ErrorKind.UPSTREAM_ERROR
-                                # 检测是否为认证错误
+                                # 检测是否为认证错误（优先级高于 UPSTREAM_ERROR）
                                 if _is_auth_error(fail_msg):
                                     error_kind = ErrorKind.AUTH_REQUIRED
+                                elif error_kind != ErrorKind.AUTH_REQUIRED:
+                                    error_kind = ErrorKind.UPSTREAM_ERROR
 
                             if "error" in line_dict.get("type", ""):
                                 error_msg = line_dict.get("message", "")
@@ -718,10 +720,11 @@ async def codex_tool(
                                 if not is_reconnecting:
                                     had_error = True
                                     err_message += "\n\n[codex error] " + error_msg
-                                    error_kind = ErrorKind.UPSTREAM_ERROR
-                                    # 检测是否为认证错误
+                                    # 检测是否为认证错误（优先级高于 UPSTREAM_ERROR）
                                     if _is_auth_error(error_msg):
                                         error_kind = ErrorKind.AUTH_REQUIRED
+                                    elif error_kind != ErrorKind.AUTH_REQUIRED:
+                                        error_kind = ErrorKind.UPSTREAM_ERROR
 
                         except json.JSONDecodeError:
                             # JSON 解析失败记录但不影响成功判定
@@ -874,10 +877,22 @@ async def codex_tool(
             exit_code = last_error["exit_code"]
             json_decode_errors = last_error["json_decode_errors"]
 
+        # 如果是认证错误，添加友好提示
+        final_error = err_message
+        if error_kind == ErrorKind.AUTH_REQUIRED:
+            final_error = (
+                "请先登录 Codex CLI。运行以下命令完成认证：\n"
+                "  codex login\n"
+                "\n"
+                "或使用 API Key 认证：\n"
+                "  printenv OPENAI_API_KEY | codex login --with-api-key\n"
+                "\n" + err_message
+            )
+
         result = {
             "success": False,
             "tool": "codex",
-            "error": err_message,
+            "error": final_error,
             "error_kind": error_kind,
             "error_detail": _build_error_detail(
                 message=err_message.split('\n')[0] if err_message else "未知错误",

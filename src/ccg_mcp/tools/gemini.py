@@ -47,6 +47,7 @@ class ErrorKind:
     IDLE_TIMEOUT = "idle_timeout"  # 空闲超时（无输出）
     COMMAND_NOT_FOUND = "command_not_found"
     UPSTREAM_ERROR = "upstream_error"
+    AUTH_REQUIRED = "auth_required"  # 需要登录认证
     JSON_DECODE = "json_decode"
     PROTOCOL_MISSING_SESSION = "protocol_missing_session"
     EMPTY_RESULT = "empty_result"
@@ -540,13 +541,37 @@ def _build_error_detail(
 # 可重试错误判断
 # ============================================================================
 
+def _is_auth_error(text: str) -> bool:
+    """检测是否为认证错误
+
+    检查文本中是否包含认证相关的特征字符串（不区分大小写）。
+    """
+    text_lower = text.lower()
+    auth_keywords = [
+        "waiting for auth",
+        "failed to login",
+        "precondition check failed",
+        "authentication",
+        "401",
+        "403",
+        "unauthorized",
+        "not authenticated",
+        "login required",
+        "sign in",
+        "oauth",
+    ]
+    return any(keyword in text_lower for keyword in auth_keywords)
+
+
 def _is_retryable_error(error_kind: Optional[str], err_message: str) -> bool:
     """判断错误是否可以重试
 
     Gemini 默认 yolo 模式，大部分错误都可以安全重试。
-    排除：命令不存在（需要用户干预）
+    排除：命令不存在（需要用户干预）、认证错误（需要用户登录）
     """
     if error_kind == ErrorKind.COMMAND_NOT_FOUND:
+        return False
+    if error_kind == ErrorKind.AUTH_REQUIRED:
         return False
     # 其他错误都可以重试
     return True
@@ -697,10 +722,16 @@ async def gemini_tool(
                                     session_id = line_dict.get("thread_id")
 
                             # 错误处理
+                            # 注意：AUTH_REQUIRED 优先级最高，一旦设置不再被覆盖
                             if event_type == "error":
                                 had_error = True
-                                err_message += "\n\n[gemini error] " + line_dict.get("message", str(line_dict))
-                                error_kind = ErrorKind.UPSTREAM_ERROR
+                                error_msg = line_dict.get("message", str(line_dict))
+                                err_message += "\n\n[gemini error] " + error_msg
+                                # 检查是否为认证错误（优先级高于 UPSTREAM_ERROR）
+                                if _is_auth_error(error_msg):
+                                    error_kind = ErrorKind.AUTH_REQUIRED
+                                elif error_kind != ErrorKind.AUTH_REQUIRED:
+                                    error_kind = ErrorKind.UPSTREAM_ERROR
 
                         except json.JSONDecodeError:
                             # JSON 解析失败，记录错误计数
@@ -854,6 +885,18 @@ async def gemini_tool(
             err_message = last_error["err_message"]
             exit_code = last_error["exit_code"]
             json_decode_errors = last_error["json_decode_errors"]
+
+        # 如果是认证错误，添加友好提示
+        if error_kind == ErrorKind.AUTH_REQUIRED:
+            auth_hint = """请先登录 Gemini CLI。运行以下命令完成认证：
+  gemini
+
+然后在交互界面中选择 "Login with Google" 完成登录。
+
+或使用 API Key 认证（设置环境变量 GEMINI_API_KEY）。
+
+"""
+            err_message = auth_hint + err_message
 
         result = {
             "success": False,
