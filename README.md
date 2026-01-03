@@ -128,6 +128,41 @@ flowchart TB
 >     *   **Coder API**: 需自行承担所配置后端模型（如智谱 AI、DeepSeek 等）的 API 调用费用。
 > *   请在正式使用前确保所有工具已登录且账号资源充足。
 
+### ⚡ 一键配置（推荐）
+
+我们提供一键配置脚本，自动完成所有设置步骤：
+
+**Windows (PowerShell)**
+```powershell
+git clone https://github.com/FredericMN/Coder-Codex-Gemini.git
+cd Coder-Codex-Gemini
+.\setup.ps1
+```
+
+**macOS/Linux**
+```bash
+git clone https://github.com/FredericMN/Coder-Codex-Gemini.git
+cd Coder-Codex-Gemini
+chmod +x setup.sh && ./setup.sh
+```
+
+**脚本执行流程**：
+
+1. **检查并安装 uv** - 如未安装则自动下载安装
+2. **检查 Claude CLI** - 验证是否已安装
+3. **安装项目依赖** - 运行 `uv sync`
+4. **注册 MCP 服务器** - 自动配置到用户级别
+5. **安装 Skills** - 复制工作流指导到 `~/.claude/skills/`
+6. **配置全局 Prompt** - 自动追加到 `~/.claude/CLAUDE.md`
+7. **配置 Coder** - 交互式输入 API Token、Base URL 和 Model
+
+**🔐 安全说明**：
+- API Token 输入时不会显示在屏幕上
+- 配置文件保存在 `~/.ccg-mcp/config.toml`，权限设置为仅当前用户可读写
+- Token 仅存储在本地，不会上传或共享
+
+> 💡 **提示**：一键配置完成后，请重启 Claude Code CLI 使配置生效。
+
 ### Windows 用户注意事项
 
 在 Windows 上使用 CCG-MCP，请确保以下 CLI 工具已正确添加到系统 PATH：

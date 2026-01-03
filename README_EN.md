@@ -122,6 +122,41 @@ Before starting, ensure you have installed the following tools:
 >     *   **Coder API**: You are responsible for the API costs of the configured backend model (e.g., Zhipu AI, DeepSeek).
 > *   Please ensure all tools are authenticated and account resources are sufficient before use.
 
+### ⚡ One-Click Setup (Recommended)
+
+We provide one-click setup scripts that automate all configuration steps:
+
+**Windows (PowerShell)**
+```powershell
+git clone https://github.com/FredericMN/Coder-Codex-Gemini.git
+cd Coder-Codex-Gemini
+.\setup.ps1
+```
+
+**macOS/Linux**
+```bash
+git clone https://github.com/FredericMN/Coder-Codex-Gemini.git
+cd Coder-Codex-Gemini
+chmod +x setup.sh && ./setup.sh
+```
+
+**What the script does**:
+
+1. **Check & Install uv** - Auto-downloads if not installed
+2. **Check Claude CLI** - Verifies installation
+3. **Install Dependencies** - Runs `uv sync`
+4. **Register MCP Server** - Configures at user level
+5. **Install Skills** - Copies workflow guides to `~/.claude/skills/`
+6. **Configure Global Prompt** - Appends to `~/.claude/CLAUDE.md`
+7. **Configure Coder** - Interactive input for API Token, Base URL, and Model
+
+**🔐 Security Notes**:
+- API Token input is hidden (not displayed on screen)
+- Config file saved to `~/.ccg-mcp/config.toml` with user-only read/write permissions
+- Tokens are stored locally only, never uploaded or shared
+
+> 💡 **Tip**: After one-click setup completes, restart Claude Code CLI for changes to take effect.
+
 ### 2. Install MCP Server
 
 **Option 1: Remote Installation (Recommended)**
