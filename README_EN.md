@@ -303,6 +303,14 @@ Add mandatory rules to `~/.claude/CLAUDE.md` to ensure Claude follows the collab
 2. **Claude Verifies**: Quick check after Coder completes; Claude fixes issues directly
 3. **Codex Reviews**: Call review after milestone development; if issues found, delegate to Coder for fixes, iterate until passed
 
+## Task Decomposition Principle (Delegating to Coder)
+
+> ⚠️ **One call, one goal**. Do not pile multiple unrelated requirements onto Coder.
+
+- **Precise Prompt**: Clear goal, sufficient context, explicit acceptance criteria
+- **Modular Split**: Related changes can be combined; independent modules separated
+- **Phased Review**: Claude verifies each module; Codex reviews at milestones
+
 ## Pre-coding Preparation (Complex Tasks)
 
 1. Search for affected symbols/entry points

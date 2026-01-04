@@ -337,6 +337,14 @@ cp -r skills/gemini-collaboration ~/.claude/skills/
 2. **Claude 验收**：Coder 完成后快速检查，有误则 Claude 自行修复
 3. **Codex 审核**：阶段性开发完成后调用 review，有误委托 Coder 修复，持续迭代直至通过
 
+## 任务拆分原则（分发给 Coder）
+
+> ⚠️ **一次调用，一个目标**。禁止向 Coder 堆砌多个不相关需求。
+
+- **精准 Prompt**：目标明确、上下文充分、验收标准清晰
+- **按模块拆分**：相关改动可合并，独立模块分开
+- **阶段性 Review**：每模块 Claude 验收，里程碑后 Codex 审核
+
 ## 编码前准备（复杂任务）
 
 1. 搜索受影响的符号/入口点
