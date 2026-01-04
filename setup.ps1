@@ -1,6 +1,11 @@
 # CCG One-Click Setup Script for Windows
 # This script automates the setup of Coder-Codex-Gemini MCP server
 
+# Force UTF-8 encoding for file operations
+$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
+$PSDefaultParameterValues['Set-Content:Encoding'] = 'utf8'
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
@@ -14,12 +19,12 @@ function Write-Success {
     Write-Host "[OK] $Message" -ForegroundColor Green
 }
 
-function Write-Error {
+function Write-ErrorMsg {
     param([string]$Message)
     Write-Host "[ERROR] $Message" -ForegroundColor Red
 }
 
-function Write-Warning {
+function Write-WarningMsg {
     param([string]$Message)
     Write-Host "[WARN] $Message" -ForegroundColor Yellow
 }
@@ -36,7 +41,7 @@ try {
     $uvInstalled = $true
     Write-Success "uv is installed"
 } catch {
-    Write-Warning "uv is not installed, installing automatically..."
+    Write-WarningMsg "uv is not installed, installing automatically..."
     try {
         powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
         # Refresh PATH
@@ -45,7 +50,7 @@ try {
         $uvInstalled = $true
         Write-Success "uv installed successfully"
     } catch {
-        Write-Error "Failed to install uv automatically"
+        Write-ErrorMsg "Failed to install uv automatically"
         Write-Host "Please install uv manually: https://github.com/astral-sh/uv" -ForegroundColor Yellow
         exit 1
     }
@@ -58,7 +63,7 @@ try {
     $claudeInstalled = $true
     Write-Success "claude CLI is installed"
 } catch {
-    Write-Error "claude CLI is not installed"
+    Write-ErrorMsg "claude CLI is not installed"
     Write-Host "Please install Claude Code CLI first: https://docs.anthropic.com/en/docs/claude-code" -ForegroundColor Yellow
     exit 1
 }
@@ -72,7 +77,7 @@ try {
     uv sync
     Write-Success "Project dependencies installed"
 } catch {
-    Write-Error "Failed to install dependencies"
+    Write-ErrorMsg "Failed to install dependencies"
     exit 1
 }
 
@@ -83,18 +88,17 @@ Write-Step "Step 3: Registering MCP server..."
 
 try {
     # Try to remove existing ccg MCP server if it exists
-    $null = claude mcp remove ccg -s user 2>&1
-    Write-Warning "Removed existing ccg MCP server"
+    $null = claude mcp remove ccg --scope user 2>&1
+    Write-WarningMsg "Removed existing ccg MCP server"
 } catch {
     # Ignore if it doesn't exist
 }
 
 try {
-    $pwd = (Get-Location).Path
-    claude mcp add ccg -s user --transport stdio -- uv run --directory "$pwd" ccg-mcp
+    claude mcp add ccg --scope user --transport stdio -- uv run --directory "$PSScriptRoot" ccg-mcp
     Write-Success "MCP server registered"
 } catch {
-    Write-Error "Failed to register MCP server"
+    Write-ErrorMsg "Failed to register MCP server"
     exit 1
 }
 
@@ -104,8 +108,8 @@ try {
 Write-Step "Step 4: Installing Skills..."
 
 $skillsDir = "$env:USERPROFILE\.claude\skills"
-$ccgWorkflowSource = "skills\ccg-workflow"
-$geminiCollabSource = "skills\gemini-collaboration"
+$ccgWorkflowSource = Join-Path $PSScriptRoot "skills\ccg-workflow"
+$geminiCollabSource = Join-Path $PSScriptRoot "skills\gemini-collaboration"
 
 try {
     # Create skills directory if it doesn't exist
@@ -123,7 +127,7 @@ try {
         Copy-Item -Recurse $ccgWorkflowSource $dest
         Write-Success "Installed ccg-workflow skill"
     } else {
-        Write-Warning "ccg-workflow skill not found, skipping"
+        Write-WarningMsg "ccg-workflow skill not found, skipping"
     }
 
     # Copy gemini-collaboration skill
@@ -135,10 +139,10 @@ try {
         Copy-Item -Recurse $geminiCollabSource $dest
         Write-Success "Installed gemini-collaboration skill"
     } else {
-        Write-Warning "gemini-collaboration skill not found, skipping"
+        Write-WarningMsg "gemini-collaboration skill not found, skipping"
     }
 } catch {
-    Write-Error "Failed to install skills"
+    Write-ErrorMsg "Failed to install skills"
     exit 1
 }
 
@@ -150,71 +154,38 @@ Write-Step "Step 5: Configuring global CLAUDE.md..."
 $claudeMdPath = "$env:USERPROFILE\.claude\CLAUDE.md"
 $ccgMarker = "# CCG Configuration"
 
-$ccgConfig = @"
-
-$ccgMarker
-
-# 全局协议
-
-## 强制规则
-
-- **默认协作**：所有代码/文档改动任务，**必须**委托 Coder 执行，阶段性完成后**必须**调用 Codex 审核
-- **跳过需确认**：若判断无需协作，**必须立即暂停**并报告：
-  > "这是一个简单的[描述]任务，我判断无需调用 Coder/Codex。是否同意？等待您的确认。"
-- **违规即终止**：未经确认跳过 Coder 执行或 Codex 审核 = **流程违规**
-- **Skill 优先**：调用 MCP 工具前，**必须已阅读对应 Skill**（`ccg-workflow`、`gemini-collaboration`）以了解最佳实践
-- **会话复用**：始终保存 `SESSION_ID` 保持上下文
-
----
-
-# AI 协作体系
-
-**Claude 是最终决策者**，所有 AI 意见仅供参考，需批判性思考后做出最优决策。
-
-## 角色分工
-
-| 角色 | 定位 | 用途 | sandbox | 重试 |
-|------|------|------|---------|------|
-| **Coder** | 代码执行者 | 生成/修改代码、批量任务 | workspace-write | 默认不重试 |
-| **Codex** | 代码审核者/高阶顾问 | 架构设计、质量把关、Review | read-only | 默认 1 次 |
-| **Gemini** | 高阶顾问（按需） | 架构设计、第二意见、前端/UI | workspace-write (yolo) | 默认 1 次 |
-
-## 核心流程
-
-1. **Coder 执行**：所有改动任务委托 Coder 处理
-2. **Claude 验收**：Coder 完成后快速检查，有误则 Claude 自行修复
-3. **Codex 审核**：阶段性开发完成后调用 review，有误委托 Coder 修复，持续迭代直至通过
-
-## 编码前准备（复杂任务）
-
-1. 搜索受影响的符号/入口点
-2. 列出需要修改的文件清单
-3. 复杂问题可先与 Codex 或 Gemini 沟通方案
-
-## Gemini 触发场景
-
-- **用户明确要求**：用户指定使用 Gemini
-- **Claude 自主调用**：设计前端/UI、需要第二意见或独立视角时
-"@
+# Read CCG config from external file to avoid encoding issues
+$ccgConfigPath = Join-Path $PSScriptRoot "templates\ccg-global-prompt.md"
 
 try {
     if (!(Test-Path $claudeMdPath)) {
-        # Create new file
-        Set-Content -Path $claudeMdPath -Value $ccgConfig
-        Write-Success "Created global CLAUDE.md"
+        # Create new file with CCG config
+        if (Test-Path $ccgConfigPath) {
+            Copy-Item $ccgConfigPath $claudeMdPath
+            Write-Success "Created global CLAUDE.md"
+        } else {
+            Write-WarningMsg "CCG global prompt template not found at $ccgConfigPath"
+            Write-WarningMsg "Please manually copy the CCG configuration to $claudeMdPath"
+        }
     } else {
         # Check if CCG config already exists
-        $content = Get-Content $claudeMdPath -Raw
+        $content = Get-Content $claudeMdPath -Raw -Encoding UTF8
         if ($content -match [regex]::Escape($ccgMarker)) {
-            Write-Warning "CCG configuration already exists in CLAUDE.md, skipping"
+            Write-WarningMsg "CCG configuration already exists in CLAUDE.md, skipping"
         } else {
             # Append CCG config
-            Add-Content -Path $claudeMdPath -Value $ccgConfig
-            Write-Success "Appended CCG configuration to CLAUDE.md"
+            if (Test-Path $ccgConfigPath) {
+                $ccgContent = Get-Content $ccgConfigPath -Raw -Encoding UTF8
+                Add-Content -Path $claudeMdPath -Value "`n$ccgContent" -Encoding UTF8
+                Write-Success "Appended CCG configuration to CLAUDE.md"
+            } else {
+                Write-WarningMsg "CCG global prompt template not found at $ccgConfigPath"
+                Write-WarningMsg "Please manually copy the CCG configuration to $claudeMdPath"
+            }
         }
     }
 } catch {
-    Write-Error "Failed to configure global CLAUDE.md"
+    Write-ErrorMsg "Failed to configure global CLAUDE.md: $_"
     exit 1
 }
 
@@ -232,10 +203,20 @@ try {
         New-Item -ItemType Directory -Path $configDir -Force | Out-Null
     }
 
+    # Check if config already exists
+    if (Test-Path $configPath) {
+        Write-WarningMsg "Config file already exists at $configPath"
+        $overwrite = Read-Host "Overwrite? (y/N)"
+        if ($overwrite -ne "y" -and $overwrite -ne "Y") {
+            Write-WarningMsg "Skipping Coder configuration"
+            goto Done
+        }
+    }
+
     # Prompt for API Token (hidden input)
     $apiToken = Read-Host "Enter your API Token" -MaskInput
     if ([string]::IsNullOrWhiteSpace($apiToken)) {
-        Write-Error "API Token is required"
+        Write-ErrorMsg "API Token is required"
         exit 1
     }
 
@@ -257,9 +238,12 @@ try {
 api_token = "$apiToken"
 base_url = "$baseUrl"
 model = "$model"
+
+[coder.env]
+CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1"
 "@
 
-    Set-Content -Path $configPath -Value $configContent
+    Set-Content -Path $configPath -Value $configContent -Encoding UTF8
 
     # Set file permissions - only current user can read/write
     $acl = Get-Acl $configPath
@@ -271,10 +255,11 @@ model = "$model"
     Write-Success "Coder configuration saved to $configPath"
 
 } catch {
-    Write-Error "Failed to configure Coder"
+    Write-ErrorMsg "Failed to configure Coder: $_"
     exit 1
 }
 
+:Done
 # ==============================================================================
 # Done!
 # ==============================================================================
@@ -285,5 +270,5 @@ Write-Host "============================================================`n" -For
 Write-Host "Next steps:" -ForegroundColor Cyan
 Write-Host "  1. Restart Claude Code CLI" -ForegroundColor White
 Write-Host "  2. Verify MCP server: claude mcp list" -ForegroundColor White
-Write-Host "  3. Check available skills: claude skills list" -ForegroundColor White
+Write-Host "  3. Check available skills: /ccg-workflow" -ForegroundColor White
 Write-Host ""

@@ -16,13 +16,13 @@ base_url = "https://open.bigmodel.cn/api/anthropic"
 # 模型名称（可选，默认 glm-4.7）
 model = "glm-4.7"
 
-# 额外环境变量（可选）
+# 额外环境变量（建议保留）
 # 可以添加任何需要传递给 Claude CLI 的环境变量
 [coder.env]
+# 禁用非必要的网络流量（遥测等），建议保持开启
 CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1"
 
 # Codex 配置（可选）
 # 一般不需要配置，Codex 工具会使用 codex CLI 自己的配置
-# 如需覆盖默认行为，可在此添加配置
-# [codex]
-# model = "o1"
+# 如需在调用时覆盖模型，可通过 MCP 工具的 model 参数指定
+# 示例：调用时传入 model="o1"
