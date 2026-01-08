@@ -94,11 +94,34 @@ try {
     # Ignore if it doesn't exist
 }
 
-try {
-    claude mcp add ccg --scope user --transport stdio -- uvx --refresh --from git+https://github.com/FredericMN/Coder-Codex-Gemini.git ccg-mcp
-    Write-Success "MCP server registered"
-} catch {
+# Try with --refresh first (requires uv >= 0.4.0)
+$mcpRegistered = $false
+$lastError = ""
+$refreshOutput = claude mcp add ccg --scope user --transport stdio -- uvx --refresh --from git+https://github.com/FredericMN/Coder-Codex-Gemini.git ccg-mcp 2>&1
+
+if ($LASTEXITCODE -eq 0) {
+    $mcpRegistered = $true
+    Write-Success "MCP server registered (with --refresh)"
+} elseif ($refreshOutput -match "(?i)unknown option.*--refresh") {
+    # Fallback: uv version too old, try without --refresh
+    Write-WarningMsg "Your uv version does not support --refresh option (requires uv >= 0.4.0)"
+    Write-WarningMsg "Falling back to installation without --refresh..."
+    Write-WarningMsg "Consider upgrading uv: powershell -c `"irm https://astral.sh/uv/install.ps1 | iex`""
+
+    $fallbackOutput = claude mcp add ccg --scope user --transport stdio -- uvx --from git+https://github.com/FredericMN/Coder-Codex-Gemini.git ccg-mcp 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        $mcpRegistered = $true
+        Write-Success "MCP server registered (without --refresh)"
+    } else {
+        $lastError = $fallbackOutput
+    }
+} else {
+    $lastError = $refreshOutput
+}
+
+if (-not $mcpRegistered) {
     Write-ErrorMsg "Failed to register MCP server"
+    Write-Host "Error details: $lastError" -ForegroundColor Red
     exit 1
 }
 
