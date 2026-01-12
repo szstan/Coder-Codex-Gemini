@@ -79,30 +79,69 @@ write_step "Step 3: Registering MCP server..."
 # Try to remove existing ccg MCP server if it exists
 claude mcp remove ccg --scope user 2>/dev/null && write_warning "Removed existing ccg MCP server" || true
 
-# Try with --refresh first (requires uv >= 0.4.0)
+# Check uv version to determine if --refresh is supported
 MCP_REGISTERED=false
 LAST_ERROR=""
-REFRESH_OUTPUT=$(claude mcp add ccg --scope user --transport stdio -- uvx --refresh --from git+https://github.com/FredericMN/Coder-Codex-Gemini.git ccg-mcp 2>&1)
-REFRESH_EXIT_CODE=$?
+USE_REFRESH=false
+UV_VERSION_KNOWN=false
 
-if [ $REFRESH_EXIT_CODE -eq 0 ]; then
-    MCP_REGISTERED=true
-    write_success "MCP server registered (with --refresh)"
-elif echo "$REFRESH_OUTPUT" | grep -qi "unknown option.*--refresh"; then
-    # Fallback: uv version too old, try without --refresh
-    write_warning "Your uv version does not support --refresh option (requires uv >= 0.4.0)"
-    write_warning "Falling back to installation without --refresh..."
+UV_VERSION_OUTPUT=$(uv --version 2>&1) || true
+if [[ "$UV_VERSION_OUTPUT" =~ uv\ ([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+    UV_VERSION_KNOWN=true
+    MAJOR="${BASH_REMATCH[1]}"
+    MINOR="${BASH_REMATCH[2]}"
+    # --refresh requires uv >= 0.4.0
+    if [ "$MAJOR" -gt 0 ] || ([ "$MAJOR" -eq 0 ] && [ "$MINOR" -ge 4 ]); then
+        USE_REFRESH=true
+    fi
+fi
+
+if [ "$USE_REFRESH" = true ]; then
+    # Try with --refresh first (disable set -e for this block)
+    set +e
+    REFRESH_OUTPUT=$(claude mcp add ccg --scope user --transport stdio -- uvx --refresh --from git+https://github.com/FredericMN/Coder-Codex-Gemini.git ccg-mcp 2>&1)
+    REFRESH_EXIT_CODE=$?
+    set -e
+
+    if [ $REFRESH_EXIT_CODE -eq 0 ]; then
+        MCP_REGISTERED=true
+        write_success "MCP server registered (with --refresh)"
+    elif echo "$REFRESH_OUTPUT" | grep -qiE "(unknown|unrecognized|unexpected|invalid).*(option|flag|argument).*--refresh|--refresh.*(unknown|unrecognized|unexpected|invalid)"; then
+        # Fallback: --refresh was rejected (covers various CLI error message formats), try without it
+        write_warning "--refresh option was rejected, falling back to installation without --refresh..."
+        set +e
+        FALLBACK_OUTPUT=$(claude mcp add ccg --scope user --transport stdio -- uvx --from git+https://github.com/FredericMN/Coder-Codex-Gemini.git ccg-mcp 2>&1)
+        FALLBACK_EXIT_CODE=$?
+        set -e
+        if [ $FALLBACK_EXIT_CODE -eq 0 ]; then
+            MCP_REGISTERED=true
+            write_success "MCP server registered (without --refresh)"
+        else
+            LAST_ERROR="$FALLBACK_OUTPUT"
+        fi
+    else
+        LAST_ERROR="$REFRESH_OUTPUT"
+    fi
+else
+    # uv version too old or unknown, skip --refresh
+    if [ "$UV_VERSION_KNOWN" = true ]; then
+        write_warning "Your uv version does not support --refresh option (requires uv >= 0.4.0)"
+    else
+        write_warning "Could not determine uv version, skipping --refresh option"
+    fi
+    write_warning "Installing without --refresh..."
     write_warning "Consider upgrading uv: curl -LsSf https://astral.sh/uv/install.sh | sh"
 
+    set +e
     FALLBACK_OUTPUT=$(claude mcp add ccg --scope user --transport stdio -- uvx --from git+https://github.com/FredericMN/Coder-Codex-Gemini.git ccg-mcp 2>&1)
-    if [ $? -eq 0 ]; then
+    FALLBACK_EXIT_CODE=$?
+    set -e
+    if [ $FALLBACK_EXIT_CODE -eq 0 ]; then
         MCP_REGISTERED=true
         write_success "MCP server registered (without --refresh)"
     else
         LAST_ERROR="$FALLBACK_OUTPUT"
     fi
-else
-    LAST_ERROR="$REFRESH_OUTPUT"
 fi
 
 if [ "$MCP_REGISTERED" = false ]; then

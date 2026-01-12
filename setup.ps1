@@ -94,18 +94,54 @@ try {
     # Ignore if it doesn't exist
 }
 
-# Try with --refresh first (requires uv >= 0.4.0)
+# Check uv version to determine if --refresh is supported
 $mcpRegistered = $false
 $lastError = ""
-$refreshOutput = claude mcp add ccg --scope user --transport stdio -- uvx --refresh --from git+https://github.com/FredericMN/Coder-Codex-Gemini.git ccg-mcp 2>&1
+$useRefresh = $false
+$uvVersionKnown = $false
 
-if ($LASTEXITCODE -eq 0) {
-    $mcpRegistered = $true
-    Write-Success "MCP server registered (with --refresh)"
-} elseif ($refreshOutput -match "(?i)unknown option.*--refresh") {
-    # Fallback: uv version too old, try without --refresh
-    Write-WarningMsg "Your uv version does not support --refresh option (requires uv >= 0.4.0)"
-    Write-WarningMsg "Falling back to installation without --refresh..."
+try {
+    $uvVersionOutput = uv --version 2>&1
+    if ($uvVersionOutput -match "uv (\d+)\.(\d+)\.(\d+)") {
+        $uvVersionKnown = $true
+        $major = [int]$Matches[1]
+        $minor = [int]$Matches[2]
+        # --refresh requires uv >= 0.4.0
+        if ($major -gt 0 -or ($major -eq 0 -and $minor -ge 4)) {
+            $useRefresh = $true
+        }
+    }
+} catch {
+    # If we can't determine version, don't use --refresh
+}
+
+if ($useRefresh) {
+    # Try with --refresh first
+    $refreshOutput = claude mcp add ccg --scope user --transport stdio -- uvx --refresh --from git+https://github.com/FredericMN/Coder-Codex-Gemini.git ccg-mcp 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        $mcpRegistered = $true
+        Write-Success "MCP server registered (with --refresh)"
+    } elseif ($refreshOutput -match "(?i)(unknown|unrecognized|unexpected|invalid).*(option|flag|argument).*--refresh|--refresh.*(unknown|unrecognized|unexpected|invalid)") {
+        # Fallback: --refresh was rejected (covers various CLI error message formats), try without it
+        Write-WarningMsg "--refresh option was rejected, falling back to installation without --refresh..."
+        $fallbackOutput = claude mcp add ccg --scope user --transport stdio -- uvx --from git+https://github.com/FredericMN/Coder-Codex-Gemini.git ccg-mcp 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            $mcpRegistered = $true
+            Write-Success "MCP server registered (without --refresh)"
+        } else {
+            $lastError = $fallbackOutput
+        }
+    } else {
+        $lastError = $refreshOutput
+    }
+} else {
+    # uv version too old or unknown, skip --refresh
+    if ($uvVersionKnown) {
+        Write-WarningMsg "Your uv version does not support --refresh option (requires uv >= 0.4.0)"
+    } else {
+        Write-WarningMsg "Could not determine uv version, skipping --refresh option"
+    }
+    Write-WarningMsg "Installing without --refresh..."
     Write-WarningMsg "Consider upgrading uv: powershell -c `"irm https://astral.sh/uv/install.ps1 | iex`""
 
     $fallbackOutput = claude mcp add ccg --scope user --transport stdio -- uvx --from git+https://github.com/FredericMN/Coder-Codex-Gemini.git ccg-mcp 2>&1
@@ -115,8 +151,6 @@ if ($LASTEXITCODE -eq 0) {
     } else {
         $lastError = $fallbackOutput
     }
-} else {
-    $lastError = $refreshOutput
 }
 
 if (-not $mcpRegistered) {
