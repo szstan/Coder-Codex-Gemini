@@ -9,11 +9,13 @@
 
 [中文文档](README.md)
 
-**Claude + Coder + Codex + Gemini Multi-Model Collaborative MCP Server**
+**Claude + Coder + Codex + Gemini Multi-Model Collaboration Framework**
 
-Empower **Claude** as the architect to orchestrate **Coder** for code execution, **Codex** for code quality review, and **Gemini** for expert consultation,<br>forming an **automated multi-party collaboration loop**.
+Empower **Claude/Sisyphus** as the architect to orchestrate **Coder** for code execution, **Codex** for code quality review, and **Gemini** for expert consultation,<br>forming an **automated multi-party collaboration loop**.
 
-[Quick Start](#-quick-start) • [Core Features](#-core-features) • [Architecture](#-architecture) • [Tools Details](#️-tools-details)
+**Supports both Claude Code (MCP) and OpenCode (Oh-My-OpenCode) environments**
+
+[Quick Start](#-quick-start) • [Core Features](#-core-features) • [Architecture](#-architecture) • [Tools Details](#️-tools-details) • [OpenCode Setup](#-opencode-setup)
 
 </div>
 
@@ -21,16 +23,28 @@ Empower **Claude** as the architect to orchestrate **Coder** for code execution,
 
 ## 🌟 Core Features
 
-CCG-MCP connects multiple top-tier models to build an efficient, cost-effective, and high-quality pipeline for code generation and review:
+CCG connects multiple top-tier models to build an efficient, cost-effective, and high-quality pipeline for code generation and review:
 
 | Dimension | Value Proposition |
 | :--- | :--- |
-| **🧠 Cost Optimization** | **Claude** handles high-intelligence reasoning & orchestration (expensive but powerful), while **Coder** handles heavy lifting of code execution (cost-effective volume). |
+| **🧠 Cost Optimization** | **Claude/Sisyphus** handles high-intelligence reasoning & orchestration (expensive but powerful), while **Coder** handles heavy lifting of code execution (cost-effective volume). |
 | **🧩 Complementary Capabilities** | **Claude** compensates for **Coder**'s creativity gaps, **Codex** provides an independent third-party review perspective, and **Gemini** offers diverse expert opinions. |
 | **🛡️ Quality Assurance** | Introduces a dual-review mechanism: **Claude Initial Review** + **Codex Final Review** to ensure code robustness. |
 | **🔄 Fully Automated Loop** | Supports a fully automated flow of `Decompose` → `Execute` → `Review` → `Retry`, minimizing human intervention. |
-| **🔧 Flexible Architecture** | **Skills + MCP** hybrid architecture: MCP provides tool capabilities, Skills provides workflow guidance, on-demand loading saves tokens. |
+| **🔧 Flexible Architecture** | Supports both **Claude Code (MCP)** and **OpenCode (Oh-My-OpenCode)** environments, choose as needed. |
 | **🔄 Context Preservation** | **SESSION_ID** session reuse ensures coherent multi-turn collaboration context, enabling stable execution of long tasks without information loss. |
+
+### 🔀 Two Runtime Environments
+
+| Feature | Claude Code (MCP) | OpenCode (Oh-My-OpenCode) |
+|---------|-------------------|---------------------------|
+| **Architect** | Claude | Sisyphus (Claude Opus) |
+| **Tool Invocation** | MCP Protocol | Sub-agent Delegation |
+| **Coder** | claude CLI + Configurable Backend | document-writer Agent |
+| **Codex** | codex CLI | oracle Agent |
+| **Gemini** | gemini CLI | frontend-ui-ux-engineer Agent |
+| **Use Case** | Claude Code Users | Prefer Open Source, Multi-LLM Providers |
+| **Config Complexity** | Medium | Higher |
 
 ## 🤖 Roles & Collaboration
 
@@ -546,9 +560,9 @@ This project uses a **dual timeout protection** mechanism:
 
 ## 📚 Architecture
 
-### Three-Layer Configuration Architecture
+### Three-Layer Configuration Architecture (Claude Code)
 
-This project uses a **MCP + Skills + Global Prompt** hybrid architecture with clear separation of concerns:
+This project uses a **MCP + Skills + Global Prompt** hybrid architecture in Claude Code environment with clear separation of concerns:
 
 | Layer | Responsibility | Token Usage | Required |
 |-------|----------------|-------------|----------|
@@ -562,6 +576,180 @@ This project uses a **MCP + Skills + Global Prompt** hybrid architecture with cl
 - **+ Global Prompt**: Mandatory rules ensure Claude always follows collaboration discipline
 
 **Token Optimization**: Skills load on-demand, non-code tasks don't load workflow guidance significantly reducing token usage
+
+---
+
+## 🔄 OpenCode Setup
+
+> **OpenCode** is an open-source alternative to Claude Code. Combined with **Oh-My-OpenCode** plugin, it can achieve similar multi-agent orchestration effects. No additional MCP or SKILLS support required.
+
+### Use Cases
+
+- Want to use multiple LLM providers (Claude, GPT, Gemini)
+- Need multi-agent parallel collaboration
+- Want to see real-time activity of each sub-agent
+- Prefer open-source tools
+
+### 🆕 New Users vs Existing Users
+
+| User Type | Recommended Approach | Description |
+|-----------|---------------------|-------------|
+| **OpenCode not installed** | One-click script | Automatically completes all installation and configuration |
+| **OpenCode + Oh-My-OpenCode already installed** | Manual configuration | Reference template files, merge configurations as needed |
+
+> ⚠️ **Note for existing users**: The one-click script will detect existing configuration files and ask whether to overwrite. If you choose to overwrite, original files will be automatically backed up. We recommend skipping and manually merging the required configurations.
+
+### ⚡ One-Click Setup (Recommended for New Users - Those who haven't installed OpenCode)
+
+**Windows (Double-click or run in terminal)**
+```powershell
+git clone https://github.com/FredericMN/Coder-Codex-Gemini.git
+cd Coder-Codex-Gemini
+.\setup-opencode.bat
+```
+
+**macOS/Linux**
+```bash
+git clone https://github.com/FredericMN/Coder-Codex-Gemini.git
+cd Coder-Codex-Gemini
+chmod +x setup-opencode.sh && ./setup-opencode.sh
+```
+
+**What the script does**:
+
+1. **Check & Install Dependencies** - bun, opencode CLI
+2. **Install Oh-My-OpenCode** - Interactive subscription selection
+3. **Configure opencode.json** - Model definitions and API config
+4. **Configure oh-my-opencode.json** - CCG agent role definitions
+5. **Configure AGENTS.md** - Collaboration protocol
+
+### 📝 Manual Configuration (Recommended for Existing Users)
+
+If you already have OpenCode and Oh-My-OpenCode installed, we recommend referencing the following template files to manually merge configurations:
+
+| Template File | Target Location | Description |
+|---------------|-----------------|-------------|
+| [`templates/opencode/opencode.json`](templates/opencode/opencode.json) | `~/.config/opencode/opencode.json` | Model and API config |
+| [`templates/opencode/oh-my-opencode.json`](templates/opencode/oh-my-opencode.json) | `~/.config/opencode/oh-my-opencode.json` | Agent role definitions |
+| [`templates/opencode/AGENTS.md`](templates/opencode/AGENTS.md) | `~/.config/opencode/AGENTS.md` | Collaboration protocol |
+
+#### Key Configuration Items
+
+**1. `oh-my-opencode.json` - Agent Role Definitions (Key Focus)**
+
+The main items to configure are `prompt_append` and `model` for each agent:
+
+> 💡 **About `prompt_append`**: This is an "append prompt" that adds CCG collaboration rules on top of Oh-My-OpenCode's original prompts. It does not overwrite the original OMO prompts, ensuring maximum compatibility.
+
+```json
+{
+  "agents": {
+    "Sisyphus": {
+      "model": "anthropic/claude-opus-4-5-20251101",
+      "prompt_append": "## CCG Collaboration Rules\n\nYou are the architect..."
+    },
+    "document-writer": {
+      "model": "zhipuai-coding-plan/glm-4.7",
+      "prompt_append": "## ⚠️ Identity Confirmation: You are the Coder sub-agent..."
+    },
+    "oracle": {
+      "model": "openai/gpt-5.1-codex-mini",
+      "prompt_append": "## ⚠️ Identity Confirmation: You are the Codex sub-agent..."
+    },
+    "frontend-ui-ux-engineer": {
+      "model": "google/antigravity-gemini-3-pro-high",
+      "prompt_append": "## ⚠️ Identity Confirmation: You are the Gemini sub-agent..."
+    }
+  }
+}
+```
+
+- **`prompt_append`**: Defines the behavioral norms for each agent role, the core of CCG collaboration
+- **`model`**: Can be adjusted to models you have subscribed to
+
+**2. `opencode.json` - Model and API Configuration**
+
+In my personal use case, most models (OpenAI, Google, Zhipu) authenticate via OAuth subscription, requiring no additional API configuration.
+
+**Example for configuring third-party API proxy** (applicable to OpenAI, Claude, and other models):
+
+```json
+{
+  "provider": {
+    "anthropic": {
+      "options": {
+        "baseURL": "https://your-proxy-api.com/v1",
+        "apiKey": "your-api-key"
+      },
+      "models": {
+        "claude-opus-4-5-20251101": { "name": "claude-opus-4-5-20251101" }
+      }
+    }
+  }
+}
+```
+
+#### ⚠️ Third-Party API Proxy Considerations
+
+When using third-party API proxies, **the model name key must exactly match the model name supported by the proxy**:
+
+```json
+// ✅ Correct: Key name matches the proxy's supported model name
+"models": {
+  "claude-opus-4-5-20251101": { "name": "claude-opus-4-5-20251101" }
+}
+
+// ❌ Wrong: Key name doesn't match the proxy, will cause call failures
+"models": {
+  "my-custom-name": { "name": "claude-opus-4-5-20251101" }
+}
+```
+
+**Before configuring, confirm**:
+1. Which model names your proxy supports
+2. Set the key names under `models` to the exact names supported by the proxy
+3. When referencing in `oh-my-opencode.json`, use the `provider/model-key` format (e.g., `anthropic/claude-opus-4-5-20251101`)
+
+### Agent Role Mapping (Template configuration, models can be freely changed)
+
+| CCG Role | OpenCode Agent | Model | Responsibility |
+|----------|----------------|-------|----------------|
+| **Architect** | Sisyphus | Claude Opus 4.5 | Requirement analysis, task decomposition, final decisions |
+| **Coder** | document-writer | GLM-4.7 | Code generation, document modification, batch tasks |
+| **Codex** | oracle | GPT-5.1 Codex Mini | Code review, architecture consulting, quality control |
+| **Gemini** | frontend-ui-ux-engineer | Gemini 3 Pro High | Frontend/UI, second opinions, independent perspective |
+
+### Authentication Setup
+
+After installation, complete authentication for each provider:
+
+```bash
+# 1. Anthropic (Claude)
+opencode auth login
+# → Select: Anthropic → Claude Pro/Max
+
+# 2. OpenAI (ChatGPT/Codex)
+opencode auth login
+# → Select: OpenAI → ChatGPT Plus/Pro (Codex Subscription)
+
+# 3. Google (Gemini)
+opencode auth login
+# → Select: Google → OAuth with Google (Antigravity)
+```
+
+> ⚠️ **Important**: When using Antigravity plugin, you must set `"google_auth": false` in `oh-my-opencode.json`
+
+### Keyboard Shortcuts
+
+| Shortcut | Function |
+|:---------|:---------|
+| `Tab` | Toggle build/plan mode |
+| `Ctrl+X` then `B` | Toggle Sidebar |
+| `Ctrl+X` then `→/←` | Switch subtasks |
+| `Ctrl+X` then `↑` | Return to main task |
+| `Ctrl+P` | Command palette |
+
+---
 
 ## 🧑‍💻 Development & Contribution
 
@@ -581,10 +769,11 @@ uv run ccg-mcp
 
 ## 📚 References
 
-- **CodexMCP**: [GitHub](https://github.com/GuDaStudio/codexmcp) - Core reference implementation
 - **FastMCP**: [GitHub](https://github.com/jlowin/fastmcp) - High-efficiency MCP framework
 - **GLM API**: [Zhipu AI](https://open.bigmodel.cn) - Powerful domestic LLM (recommended as Coder backend)
 - **Claude Code**: [Documentation](https://docs.anthropic.com/en/docs/claude-code)
+- **OpenCode**: [Official Docs](https://opencode.ai/docs) - Open-source AI Coding Agent
+- **Oh-My-OpenCode**: [GitHub](https://github.com/code-yeongyu/oh-my-opencode) - OpenCode multi-agent orchestration plugin
 
 ## 📄 License
 
