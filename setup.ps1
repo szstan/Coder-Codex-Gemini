@@ -201,22 +201,46 @@ if ($DryRun) {
 
         if ($useRefresh) {
             # Try with --refresh first
-            $refreshOutput = & claude @("mcp","add","ccg","--scope","user","--transport","stdio","--","uvx","--refresh","--from","git+https://github.com/FredericMN/Coder-Codex-Gemini.git","ccg-mcp") 2>&1
-            if ($LASTEXITCODE -eq 0) {
+            $refreshSucceeded = $false
+            try {
+                $refreshOutput = & claude @("mcp","add","ccg","--scope","user","--transport","stdio","--","uvx","--refresh","--from","git+https://github.com/FredericMN/Coder-Codex-Gemini.git","ccg-mcp") 2>&1
+                if ($LASTEXITCODE -eq 0) {
+                    $refreshSucceeded = $true
+                }
+            } catch {
+                $refreshOutput = $_.Exception.Message
+                $refreshSucceeded = $false
+            }
+
+            if ($refreshSucceeded) {
                 $mcpRegistered = $true
                 Write-Success "MCP server registered (with --refresh)"
-            } elseif ($refreshOutput -match "(?i)(?:unknown|unrecognized|unexpected|invalid|no such|unsupported|found argument|unexpected argument).*--refresh|--refresh.*(?:unknown|unrecognized|unexpected|invalid|no such|unsupported|found argument|unexpected argument)") {
-                # Fallback: --refresh was rejected (covers various CLI error message formats), try without it
-                Write-WarningMsg "--refresh option was rejected, falling back to installation without --refresh..."
-                $fallbackOutput = & claude @("mcp","add","ccg","--scope","user","--transport","stdio","--","uvx","--from","git+https://github.com/FredericMN/Coder-Codex-Gemini.git","ccg-mcp") 2>&1
-                if ($LASTEXITCODE -eq 0) {
-                    $mcpRegistered = $true
-                    Write-Success "MCP server registered (without --refresh)"
-                } else {
-                    $lastError = $fallbackOutput
-                }
             } else {
-                $lastError = $refreshOutput
+                # Check if error is about --refresh option (covers various CLI error message formats)
+                # Use -replace to normalize whitespace for reliable matching
+                $refreshOutputStr = ($refreshOutput | Out-String) -replace '\s+', ' '
+                if ($refreshOutputStr -match "(?i)(unknown|unrecognized|unexpected|invalid|no such|unsupported|found argument).*--refresh|--refresh.*(unknown|unrecognized|unexpected|invalid|no such|unsupported|found argument)|unknown option.*--refresh") {
+                    # Fallback: --refresh was rejected, try without it
+                    Write-WarningMsg "--refresh option was rejected, falling back to installation without --refresh..."
+                    $fallbackSucceeded = $false
+                    try {
+                        $fallbackOutput = & claude @("mcp","add","ccg","--scope","user","--transport","stdio","--","uvx","--from","git+https://github.com/FredericMN/Coder-Codex-Gemini.git","ccg-mcp") 2>&1
+                        if ($LASTEXITCODE -eq 0) {
+                            $fallbackSucceeded = $true
+                        }
+                    } catch {
+                        $fallbackOutput = $_.Exception.Message
+                        $fallbackSucceeded = $false
+                    }
+                    if ($fallbackSucceeded) {
+                        $mcpRegistered = $true
+                        Write-Success "MCP server registered (without --refresh)"
+                    } else {
+                        $lastError = $fallbackOutput
+                    }
+                } else {
+                    $lastError = $refreshOutput
+                }
             }
         } else {
             # uv version too old or unknown, skip --refresh
@@ -228,8 +252,17 @@ if ($DryRun) {
             Write-WarningMsg "Installing without --refresh..."
             Write-WarningMsg "Consider upgrading uv: powershell -c `"irm https://astral.sh/uv/install.ps1 | iex`""
 
-            $fallbackOutput = & claude @("mcp","add","ccg","--scope","user","--transport","stdio","--","uvx","--from","git+https://github.com/FredericMN/Coder-Codex-Gemini.git","ccg-mcp") 2>&1
-            if ($LASTEXITCODE -eq 0) {
+            $fallbackSucceeded = $false
+            try {
+                $fallbackOutput = & claude @("mcp","add","ccg","--scope","user","--transport","stdio","--","uvx","--from","git+https://github.com/FredericMN/Coder-Codex-Gemini.git","ccg-mcp") 2>&1
+                if ($LASTEXITCODE -eq 0) {
+                    $fallbackSucceeded = $true
+                }
+            } catch {
+                $fallbackOutput = $_.Exception.Message
+                $fallbackSucceeded = $false
+            }
+            if ($fallbackSucceeded) {
                 $mcpRegistered = $true
                 Write-Success "MCP server registered (without --refresh)"
             } else {
