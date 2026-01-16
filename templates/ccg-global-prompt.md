@@ -67,6 +67,48 @@
 2. 列出需要修改的文件清单
 3. 复杂问题可先与 Codex 或 Gemini 沟通方案
 
+## AI 治理框架
+
+CCG 提供完整的 AI 治理框架，确保代码质量和工作流规范。
+
+### 实施合约系统
+
+**何时需要写合约**：
+- 多文件/多模块改动（3+ 个文件）
+- 存在兼容性风险
+- 涉及性能敏感点
+- 需要明确测试策略
+
+**合约位置**：`ai/contracts/`
+- 使用 `CONTRACT_TEMPLATE.md` 创建新合约
+- 参考 `CONTRACT_QUICKSTART.md` 快速入门
+- 当前任务合约保存在 `ai/contracts/current.md`
+
+### 质量保障体系
+
+**Coder 质量指南**：`ai/coder_quality_guide.md`
+- 确保 Coder 输出符合质量标准
+- 包含代码规范和最佳实践
+
+**Codex 审核门禁**：`ai/codex_review_gate.md`
+- 8 条机器可判定的 Blocking 规则
+- 演进安全、可观测性、可测试性、可维护性
+
+**工程执行原则**：`ai/engineering_codex.md`
+- 定义代码质量和执行规则
+- 提供工程最佳实践指导
+
+### 自动驾驶策略
+
+**实现者边界**：`ai/implementer_guardrails.md`
+- 定义硬停止条件
+- 提供自动驾驶策略
+- 避免无限循环
+
+**失败循环决策**：`ai/FAILURE_LOOP_DECISION.md`
+- 失败处理框架
+- 决策树和重试策略
+
 ## Gemini 触发场景
 
 - **用户明确要求**：用户指定使用 Gemini
