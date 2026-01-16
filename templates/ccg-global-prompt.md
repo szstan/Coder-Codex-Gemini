@@ -21,6 +21,7 @@
 | `mcp__ccg__coder` | `/ccg-workflow` | 必须先执行 |
 | `mcp__ccg__codex` | `/ccg-workflow` | 必须先执行 |
 | `mcp__ccg__gemini` | `/gemini-collaboration` | 必须先执行 |
+| Codex 企业级 Review | `/codex-code-review-enterprise` | 按需执行 |
 
 **执行流程**：
 1. 用户请求使用 Coder/Codex/Gemini
@@ -69,4 +70,90 @@
 ## Gemini 触发场景
 
 - **用户明确要求**：用户指定使用 Gemini
+- **前端/UI 开发**：**默认使用 Gemini 开发前端内容**（HTML/CSS/JavaScript/React/Vue 等）
 - **Claude 自主调用**：设计前端/UI、需要第二意见或独立视角时
+
+---
+
+# 外部工具集成提醒
+
+## OpenSpec-CN 使用提醒
+
+**自动检测和提醒机制**：
+
+如果用户提到以下任何情况，需要检查并提醒：
+
+### 触发条件
+- 用户提到"OpenSpec"、"openspec-cn"、"规范驱动"等关键词
+- 用户刚运行了 `openspec-cn init` 命令
+- 用户尝试使用 OpenSpec 相关的 skills（如 `/openspec:proposal`、`/openspec:apply` 等）
+
+### 检测逻辑
+1. **检查 openspec/ 目录是否存在**：如果存在，说明项目已初始化 OpenSpec
+2. **检查 OpenSpec skills 是否可用**：尝试列出可用的 skills，查看是否包含 OpenSpec 相关的 skills
+
+### 提醒内容
+
+**场景 1：用户刚运行 `openspec-cn init`**
+
+提醒用户：
+
+> ⚠️ **重要提醒**：检测到您刚运行了 `openspec-cn init`。
+>
+> OpenSpec skills 需要重启 Claude Code 才能加载。请按以下方式重启：
+>
+> **VSCode 用户**：
+> 1. 按 `Ctrl+Shift+P` (Windows/Linux) 或 `Cmd+Shift+P` (Mac)
+> 2. 输入 "Reload Window"
+> 3. 选择 "Developer: Reload Window"
+>
+> **CLI 用户**：
+> 1. 退出当前会话 (Ctrl+C 或 exit)
+> 2. 重新启动 Claude Code
+>
+> 重启后，OpenSpec skills（如 `/openspec:proposal`、`/openspec:apply` 等）将可用。
+
+**场景 2：用户提到 OpenSpec 但 skills 不可用**
+
+提醒用户：
+
+> ⚠️ **OpenSpec Skills 未加载**：检测到您想使用 OpenSpec，但相关 skills 似乎未加载。
+>
+> 可能的原因：
+> 1. 您刚运行了 `openspec-cn init`，但尚未重启 Claude Code
+> 2. `openspec/AGENTS.md` 文件可能不存在或格式不正确
+>
+> **解决方法**：
+> - 如果刚初始化，请重启 Claude Code（参考上述重启步骤）
+> - 如果已重启，请检查 `openspec/AGENTS.md` 文件是否存在
+
+**场景 3：OpenSpec 已正常加载**
+
+无需提醒，正常使用即可。
+
+### 最佳实践
+
+**首次使用 OpenSpec 的标准流程**：
+1. 安装：`npm install -g openspec-chinese`
+2. 初始化：`openspec-cn init`
+3. **立即重启 Claude Code**（关键步骤）
+4. 验证：检查 OpenSpec skills 是否可用
+5. 开始使用：创建提案、管理变更等
+
+**后续使用**：
+- 无需再次重启（除非修改了 `openspec/AGENTS.md` 文件）
+- OpenSpec skills 将持续可用
+
+### 与 CCG 的协调使用
+
+OpenSpec-CN 与 CCG 是互补关系：
+
+| 工具 | 定位 | 用途 |
+|------|------|------|
+| **OpenSpec-CN** | 规范管理层 | 管理提案、活跃变更、归档 |
+| **new009** | 协议层 | 实施合约、质量门禁 |
+| **CCG** | 基础设施层 | Coder/Codex/Gemini 工具执行 |
+
+**推荐工作流**：
+1. 大型变更：先用 OpenSpec 创建提案 → 再用 new009 合约执行 → CCG 工具实施
+2. 小型变更：直接使用 new009 合约 + CCG 工具
