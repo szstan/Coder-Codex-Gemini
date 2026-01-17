@@ -144,13 +144,20 @@ npm install -g acemcp-node
 
 ### 阶段 3：测试失败多层级修复（推荐）
 
+**修复策略**：3 层修复，每层 3 次重试，总共 9 次尝试
+
 **使用的工具**：
-- ✅ `mcp__ccg__coder` - 第 1 层快速修复
-- ✅ `mcp__ccg__codex` - 第 2 层专家诊断
-- ✅ `mcp__ccg__gemini` - 第 4 层独立视角
-- ✅ Edit 工具 - 第 3 层 Claude 亲自修复
+- ✅ `mcp__ccg__codex` - 第 1 层深度诊断
+- ✅ `mcp__ccg__coder` - 第 1 层执行修复
+- ✅ Edit 工具 - 第 2 层 Claude 亲自修复
+- ✅ `mcp__ccg__gemini` - 第 3 层独立视角
 - ✅ `mcp__acemcp__search_context` - 每层修复前语义搜索
 - ✅ Bash 工具 - 运行测试命令
+
+**修复流程**：
+- 第 1 层：Codex 诊断 + Coder 执行（3 次），成功率 85-90%
+- 第 2 层：Claude 亲自修复（3 次），累计成功率 93-97%
+- 第 3 层：Gemini 独立视角（3 次），累计成功率 96-99%
 
 **文档参考**：
 - `ai/testing/test_failure_multi_tier_fix.md` - 多层级修复策略
