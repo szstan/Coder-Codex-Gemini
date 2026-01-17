@@ -173,7 +173,37 @@ if ($DryRun) {
 # ==============================================================================
 Write-Step "Step 3: Registering MCP server..."
 
-if ($DryRun) {
+# Check for Git Bash (required by Claude Code on Windows)
+$gitBashPath = $env:CLAUDE_CODE_GIT_BASH_PATH
+if (-not $gitBashPath) {
+    # Try common installation paths
+    $commonPaths = @(
+        "C:\Program Files\Git\bin\bash.exe",
+        "C:\Program Files (x86)\Git\bin\bash.exe",
+        "$env:LOCALAPPDATA\Programs\Git\bin\bash.exe"
+    )
+    foreach ($path in $commonPaths) {
+        if (Test-Path $path) {
+            $gitBashPath = $path
+            break
+        }
+    }
+}
+
+if (-not $gitBashPath -or -not (Test-Path $gitBashPath)) {
+    Write-WarningMsg "Git Bash not found. Claude Code on Windows requires Git Bash for MCP server registration."
+    Write-Host ""
+    Write-Host "Please install Git for Windows:" -ForegroundColor Yellow
+    Write-Host "  1. Download from: https://git-scm.com/downloads/win" -ForegroundColor White
+    Write-Host "  2. Install with default options" -ForegroundColor White
+    Write-Host "  3. Restart PowerShell and run this script again" -ForegroundColor White
+    Write-Host ""
+    Write-Host "Or, if Git Bash is already installed, set the environment variable:" -ForegroundColor Yellow
+    Write-Host "  `$env:CLAUDE_CODE_GIT_BASH_PATH = 'C:\Program Files\Git\bin\bash.exe'" -ForegroundColor White
+    Write-Host ""
+    Write-WarningMsg "Skipping MCP server registration. You can register manually later."
+    Write-Host ""
+} elseif ($DryRun) {
     Write-DryRun "Would run: claude mcp remove ccg --scope user"
 
     # Check uv version
