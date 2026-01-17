@@ -49,7 +49,7 @@ npm install -g acemcp-node
 
 ## Claude Code Skills
 
-### 1. CCG Skills（项目内置）
+### 1. CCG Skills（项目内置，克隆即用）
 
 | Skill 名称 | 用途 | 调用方式 |
 |-----------|------|---------|
@@ -58,8 +58,11 @@ npm install -g acemcp-node
 | `/ccg:plan` | 规划生成器 | 为复杂任务生成详细实施计划 |
 | `/ccg:execute` | 计划执行器 | 执行已生成的实施计划 |
 | `/ccg:parallel` | 并行任务执行器 | 将大型任务拆分为多个独立子任务并行执行 |
+| `/codex-code-review-enterprise` | 企业级 PR 代码评审 | 严格范围内的评审，按优先级输出问题清单 |
 
 **位置**：`skills/` 目录
+
+**自动化程度**：✅ **克隆项目后自动可用，无需配置**
 
 **使用规则**：
 - 在调用任何 CCG MCP 工具之前，必须先执行对应的 Skill
@@ -67,7 +70,9 @@ npm install -g acemcp-node
 
 ### 2. Superpowers Skills（官方插件，强烈推荐）
 
-**来源**：Claude Code 官方插件（自动安装）
+**来源**：Claude Code 官方插件
+
+**自动化程度**：✅ **Claude Code 自动安装和更新，无需任何配置**
 
 **核心 Skills**：
 
@@ -85,9 +90,11 @@ npm install -g acemcp-node
 
 **安装状态**：Claude Code 自动安装和更新
 
-### 3. OpenSpec-CN（规范驱动开发，可选）
+### 3. OpenSpec-CN（规范驱动开发，项目内置）
 
 **来源**：OpenSpec 中文版工具
+
+**自动化程度**：✅ **克隆项目后自动可用，无需配置**
 
 **核心命令**：
 
@@ -162,13 +169,29 @@ npm install -g acemcp-node
 
 ## 初始化检查清单
 
-### 步骤 1：安装 CCG MCP 服务器
+> **自动化说明**：
+> - ✅ **CCG Skills**：克隆项目后自动可用
+> - ✅ **OpenSpec-CN**：克隆项目后自动可用
+> - ✅ **Superpowers**：Claude Code 自动安装
+> - ⚙️ **CCG MCP 工具**：需要手动配置 API
+> - ⚙️ **acemcp**：需要手动安装
+
+### 步骤 1：克隆项目（自动获得 Skills 和 OpenSpec）
 
 ```bash
 # 克隆项目
 git clone https://github.com/szstan/Coder-Codex-Gemini.git
 cd Coder-Codex-Gemini
+```
 
+**自动获得的功能**：
+- ✅ CCG Skills（6 个）
+- ✅ OpenSpec-CN 命令（3 个）
+- ✅ 完整的 AI 治理框架文档
+
+### 步骤 2：安装 CCG MCP 服务器
+
+```bash
 # 运行安装脚本
 # Windows:
 setup.bat
@@ -177,7 +200,7 @@ setup.bat
 ./setup.sh
 ```
 
-### 步骤 2：配置 CCG MCP 工具
+### 步骤 3：配置 CCG MCP 工具
 
 创建配置文件 `~/.ccg-mcp/config.toml`：
 
@@ -194,7 +217,7 @@ api_token = "your-openai-api-token"
 # Gemini 配置
 ```
 
-### 步骤 3：安装 acemcp（强烈推荐）
+### 步骤 4：安装 acemcp（强烈推荐）
 
 ```bash
 npm install -g acemcp-node
@@ -205,7 +228,7 @@ npm install -g acemcp-node
 npx acemcp-node --version
 ```
 
-### 步骤 4：配置 Claude Code
+### 步骤 5：配置 Claude Code
 
 将 CCG 全局 Prompt 复制到 Claude Code 配置：
 
@@ -214,7 +237,7 @@ npx acemcp-node --version
 cp templates/ccg-global-prompt.md ~/.claude/CLAUDE.md
 ```
 
-### 步骤 5：验证配置
+### 步骤 6：验证配置
 
 **检查清单**：
 - [ ] CCG MCP 服务器已安装

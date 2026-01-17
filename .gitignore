@@ -45,3 +45,11 @@ config.toml
 
 # uv
 uv.lock
+
+# Backup files
+*.bak/
+*.backup/
+
+# Temporary files
+new*/
+nul

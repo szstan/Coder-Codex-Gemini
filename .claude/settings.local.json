@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: 集成 Codex 企业级审核技能并添加前端开发规则\n\n## 主要改动\n\n### 1. 集成 Codex 企业级审核技能\n- 在全局配置模板中注册 `/codex-code-review-enterprise` 技能\n- 在 CCG 工作流中添加\"Codex Review 模式\"章节\n- 在 Codex 工具指南中添加\"企业级审核模式\"说明\n- 明确区分标准审核和企业级审核的使用场景\n\n### 2. 添加前端开发规则\n- 在 Gemini 触发场景中添加新规则\n- 明确规定：前端内容默认使用 Gemini 开发\n- 涵盖 HTML/CSS/JavaScript/React/Vue 等前端技术栈\n\n## 改动文件\n- templates/ccg-global-prompt.md\n- skills/ccg-workflow/SKILL.md\n- skills/ccg-workflow/codex-guide.md\n\n## 集成价值\n- 提供分层审核能力（日常开发 vs PR 合入）\n- 优化前端开发流程（发挥 Gemini 优势）\n- 完善 CCG 生态（执行-验收-审核闭环）\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(tree:*)",
+      "Bash(git checkout:*)",
+      "Bash(ls:*)"
+    ]
+  }
+}
