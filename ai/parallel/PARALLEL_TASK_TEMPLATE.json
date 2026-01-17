@@ -1,0 +1,57 @@
+{
+  "task_name": "task-name",
+  "description": "任务描述",
+  "created_at": "2026-01-17T00:00:00Z",
+  "status": "pending",
+  "subtasks": [
+    {
+      "id": "subtask-1",
+      "name": "子任务1名称",
+      "description": "子任务1的详细描述",
+      "agent": "coder",
+      "dependencies": [],
+      "files": [
+        "src/example/file1.py",
+        "tests/test_file1.py"
+      ],
+      "prompt": "详细的任务描述，包括：\n1. 任务目标\n2. 实现要求\n3. 验收标准\n4. 注意事项",
+      "timeout": 1800,
+      "status": "pending",
+      "result": null
+    },
+    {
+      "id": "subtask-2",
+      "name": "子任务2名称",
+      "description": "子任务2的详细描述",
+      "agent": "gemini",
+      "dependencies": [],
+      "files": [
+        "src/components/Example.tsx"
+      ],
+      "prompt": "详细的任务描述...",
+      "timeout": 1800,
+      "status": "pending",
+      "result": null
+    },
+    {
+      "id": "subtask-3",
+      "name": "子任务3名称",
+      "description": "子任务3的详细描述（依赖子任务1和2）",
+      "agent": "coder",
+      "dependencies": ["subtask-1", "subtask-2"],
+      "files": [
+        "tests/test_integration.py"
+      ],
+      "prompt": "详细的任务描述...",
+      "timeout": 1800,
+      "status": "pending",
+      "result": null
+    }
+  ],
+  "execution_log": {
+    "start_time": null,
+    "end_time": null,
+    "total_duration": null,
+    "batches": []
+  }
+}
