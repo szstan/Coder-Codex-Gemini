@@ -6,6 +6,7 @@
 ## 强制规则
 
 - **默认协作**：所有代码/文档改动任务，**必须**委托 Coder 执行，阶段性完成后**必须**调用 Codex 审核
+- **数据库设计先行**：涉及数据结构变更（新增表、修改字段、数据迁移等），**必须**先执行 `/ccg-database-design` 完成设计和审核
 - **Git 安全检查**：在调用 Coder/Gemini 改动代码前，**必须**先执行 `/ccg-git-safety` 创建安全点
 - **跳过需确认**：若判断无需协作，**必须立即暂停**并报告：
   > "这是一个简单的[描述]任务，我判断无需调用 Coder/Codex。是否同意？等待您的确认。"
@@ -22,6 +23,7 @@
 | `mcp__ccg__coder` | `/ccg-workflow` | 必须先执行 |
 | `mcp__ccg__codex` | `/ccg-workflow` | 必须先执行 |
 | `mcp__ccg__gemini` | `/gemini-collaboration` | 必须先执行 |
+| 数据库设计 | `/ccg-database-design` | 涉及数据结构变更时强制执行 |
 | Git 安全检查 | `/ccg-git-safety` | 改动代码前强制执行 |
 | 编写计划 | `/ccg-plan` | 复杂任务前执行 |
 | 执行计划 | `/ccg-execute` | 执行实施计划 |
@@ -73,9 +75,15 @@
 
 ## 编码前准备（复杂任务）
 
-1. 搜索受影响的符号/入口点
-2. 列出需要修改的文件清单
-3. 复杂问题可先与 Codex 或 Gemini 沟通方案
+1. **数据库设计**（涉及数据结构变更时强制）：
+   - 识别数据实体和关系
+   - 选择设计方式（用户自行设计 OR Codex 辅助设计）
+   - Codex 审核设计（强制）
+   - 记录设计文档到 docs/database/
+   - 详见 `/ccg-database-design` Skill
+2. 搜索受影响的符号/入口点
+3. 列出需要修改的文件清单
+4. 复杂问题可先与 Codex 或 Gemini 沟通方案
 
 ## Codex + Gemini 双顾问协作模式
 
@@ -111,13 +119,15 @@ CCG 提供完整的 AI 治理框架，确保代码质量和工作流规范。
 - **可选**：`mcp__ccg__gemini`（专家咨询）
 
 **已集成工具（克隆项目后自动可用）**：
-- ✅ **CCG Skills**（12 个）：
+- ✅ **CCG Skills**（14 个）：
   - 协作流程：`/ccg-workflow`、`/gemini-collaboration`
   - 任务管理：`/ccg-plan`、`/ccg-execute`、`/ccg-parallel`
   - Contract 管理：`/ccg-contract`、`/ccg-codex-gate`
   - 质量保障：`/ccg-review`、`/codex-code-review-enterprise`
   - 测试修复：`/ccg-test-fix`、`/ccg-test-fix-advanced`
   - 配置管理：`/ccg-checkpoint`
+  - 数据库设计：`/ccg-database-design`
+  - 安全保障：`/ccg-git-safety`
 - ✅ **OpenSpec-CN**（3 个命令）：`openspec:proposal`、`openspec:apply`、`openspec:archive`
 - ✅ **Superpowers Skills**：Claude Code 官方插件，自动安装（包括 brainstorming、test-driven-development、systematic-debugging 等）
 
