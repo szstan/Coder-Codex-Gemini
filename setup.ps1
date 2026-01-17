@@ -318,29 +318,90 @@ if ($DryRun) {
 }
 
 # ==============================================================================
-# Step 4: Install Skills
+# Step 4: Install additional MCP servers
 # ==============================================================================
-Write-Step "Step 4: Installing Skills..."
+Write-Step "Step 4: Installing additional MCP servers..."
+
+# Check if npm is installed
+$npmInstalled = $false
+try {
+    $null = npm --version 2>&1
+    $npmInstalled = $true
+    Write-Success "npm is installed"
+} catch {
+    Write-WarningMsg "npm is not installed, skipping additional MCP servers"
+    Write-WarningMsg "To install npm: https://nodejs.org/"
+}
+
+if ($npmInstalled -and -not $DryRun) {
+    # Install Ace MCP (semantic search)
+    Write-Step "Installing Ace MCP for semantic search..."
+    try {
+        $null = npm list -g acemcp-node 2>&1
+        Write-Success "acemcp-node is already installed"
+    } catch {
+        try {
+            npm install -g acemcp-node
+            Write-Success "acemcp-node installed successfully"
+        } catch {
+            Write-WarningMsg "Failed to install acemcp-node, you can install it manually later"
+        }
+    }
+
+    # Register Ace MCP server
+    Write-Step "Registering Ace MCP server..."
+    $null = & claude @("mcp","remove","acemcp","--scope","user") 2>&1
+    try {
+        $null = & claude @("mcp","add","acemcp","--scope","user","--transport","stdio","--","npx","acemcp-node") 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Success "Ace MCP server registered"
+        } else {
+            Write-WarningMsg "Failed to register Ace MCP server, you can register it manually later"
+        }
+    } catch {
+        Write-WarningMsg "Failed to register Ace MCP server, you can register it manually later"
+    }
+
+    # Register Playwright MCP server (for testing)
+    Write-Step "Registering Playwright MCP server for testing..."
+    $null = & claude @("mcp","remove","playwright","--scope","user") 2>&1
+    try {
+        $null = & claude @("mcp","add","playwright","--scope","user","--transport","stdio","--","npx","-y","@executeautomation/playwright-mcp-server") 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Success "Playwright MCP server registered"
+        } else {
+            Write-WarningMsg "Failed to register Playwright MCP server, you can register it manually later"
+        }
+    } catch {
+        Write-WarningMsg "Failed to register Playwright MCP server, you can register it manually later"
+    }
+} elseif ($DryRun) {
+    Write-DryRun "Would check for npm installation"
+    Write-DryRun "Would install acemcp-node globally"
+    Write-DryRun "Would register Ace MCP server"
+    Write-DryRun "Would register Playwright MCP server"
+}
+
+# ==============================================================================
+# Step 5: Install Skills
+# ==============================================================================
+Write-Step "Step 5: Installing Skills..."
 
 $skillsDir = "$env:USERPROFILE\.claude\skills"
-$ccgWorkflowSource = Join-Path $PSScriptRoot "skills\ccg-workflow"
-$geminiCollabSource = Join-Path $PSScriptRoot "skills\gemini-collaboration"
+$skillsSourceDir = Join-Path $PSScriptRoot "skills"
 
 if ($DryRun) {
     if (!(Test-Path $skillsDir)) {
         Write-DryRun "Would create directory: $skillsDir"
     }
-    if (Test-Path $ccgWorkflowSource) {
-        Write-DryRun "Would copy: $ccgWorkflowSource -> $skillsDir\ccg-workflow"
-        Write-Success "ccg-workflow skill would be installed"
+    if (Test-Path $skillsSourceDir) {
+        $skillDirs = Get-ChildItem -Path $skillsSourceDir -Directory
+        foreach ($skillDir in $skillDirs) {
+            Write-DryRun "Would copy: $($skillDir.FullName) -> $skillsDir\$($skillDir.Name)"
+            Write-Success "$($skillDir.Name) skill would be installed"
+        }
     } else {
-        Write-WarningMsg "ccg-workflow skill not found, would skip"
-    }
-    if (Test-Path $geminiCollabSource) {
-        Write-DryRun "Would copy: $geminiCollabSource -> $skillsDir\gemini-collaboration"
-        Write-Success "gemini-collaboration skill would be installed"
-    } else {
-        Write-WarningMsg "gemini-collaboration skill not found, would skip"
+        Write-WarningMsg "Skills directory not found, would skip"
     }
 } else {
     try {
@@ -350,39 +411,33 @@ if ($DryRun) {
             Write-Success "Created skills directory: $skillsDir"
         }
 
-        # Copy ccg-workflow skill
-        if (Test-Path $ccgWorkflowSource) {
-            $dest = "$skillsDir\ccg-workflow"
-            if (Test-Path $dest) {
-                Remove-Item -Recurse -Force $dest
+        # Install all skills from skills directory
+        $installedCount = 0
+        if (Test-Path $skillsSourceDir) {
+            $skillDirs = Get-ChildItem -Path $skillsSourceDir -Directory
+            foreach ($skillDir in $skillDirs) {
+                $dest = Join-Path $skillsDir $skillDir.Name
+                if (Test-Path $dest) {
+                    Remove-Item -Recurse -Force $dest
+                }
+                Copy-Item -Recurse $skillDir.FullName $dest
+                Write-Success "Installed $($skillDir.Name) skill"
+                $installedCount++
             }
-            Copy-Item -Recurse $ccgWorkflowSource $dest
-            Write-Success "Installed ccg-workflow skill"
+            Write-Success "Installed $installedCount skills"
         } else {
-            Write-WarningMsg "ccg-workflow skill not found, skipping"
-        }
-
-        # Copy gemini-collaboration skill
-        if (Test-Path $geminiCollabSource) {
-            $dest = "$skillsDir\gemini-collaboration"
-            if (Test-Path $dest) {
-                Remove-Item -Recurse -Force $dest
-            }
-            Copy-Item -Recurse $geminiCollabSource $dest
-            Write-Success "Installed gemini-collaboration skill"
-        } else {
-            Write-WarningMsg "gemini-collaboration skill not found, skipping"
+            Write-WarningMsg "Skills directory not found, skipping"
         }
     } catch {
-        Write-ErrorMsg "Failed to install skills"
+        Write-ErrorMsg "Failed to install skills: $_"
         exit 1
     }
 }
 
 # ==============================================================================
-# Step 5: Configure global CLAUDE.md
+# Step 6: Configure global CLAUDE.md
 # ==============================================================================
-Write-Step "Step 5: Configuring global CLAUDE.md..."
+Write-Step "Step 6: Configuring global CLAUDE.md..."
 
 $claudeMdPath = "$env:USERPROFILE\.claude\CLAUDE.md"
 $ccgMarker = "# CCG Configuration"
@@ -446,9 +501,9 @@ if ($DryRun) {
 }
 
 # ==============================================================================
-# Step 6: Configure Coder
+# Step 7: Configure Coder
 # ==============================================================================
-Write-Step "Step 6: Configuring Coder..."
+Write-Step "Step 7: Configuring Coder..."
 
 $configDir = "$env:USERPROFILE\.ccg-mcp"
 $configPath = "$configDir\config.toml"

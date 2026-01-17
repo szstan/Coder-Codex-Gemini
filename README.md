@@ -152,6 +152,7 @@ flowchart TB
 *   **Claude Code**: 版本 **≥ v2.0.56** ([安装指南](https://code.claude.com/docs))
 *   **Codex CLI**: 版本 **≥ v0.61.0** ([安装指南](https://developers.openai.com/codex/quickstart))
 *   **Gemini CLI**（可选）: 如需使用 Gemini 工具 ([安装指南](https://github.com/google-gemini/gemini-cli))
+*   **Node.js & npm**（推荐）: 用于安装额外的 MCP 服务器 ([安装指南](https://nodejs.org/))
 *   **Coder 后端 API Token**: 需自行配置，推荐使用 GLM-4.7 作为参考案例，从 [智谱 AI](https://open.bigmodel.cn) 获取。
 
 > **⚠️ 重要提示：费用与权限**
@@ -186,10 +187,13 @@ chmod +x setup.sh && ./setup.sh
 1. **检查并安装 uv** - 如未安装则自动下载安装
 2. **检查 Claude CLI** - 验证是否已安装
 3. **安装项目依赖** - 运行 `uv sync`
-4. **注册 MCP 服务器** - 自动配置到用户级别
-5. **安装 Skills** - 复制工作流指导到 `~/.claude/skills/`
-6. **配置全局 Prompt** - 自动追加到 `~/.claude/CLAUDE.md`
-7. **配置 Coder** - 交互式输入 API Token、Base URL 和 Model
+4. **注册 CCG MCP 服务器** - 自动配置到用户级别
+5. **安装额外 MCP 服务器**（需要 npm）：
+   - **Ace MCP** - 语义搜索，提高代码定位准确性
+   - **Playwright MCP** - 浏览器自动化测试，支持 E2E 测试
+6. **安装 Skills** - 复制工作流指导到 `~/.claude/skills/`
+7. **配置全局 Prompt** - 自动追加到 `~/.claude/CLAUDE.md`
+8. **配置 Coder** - 交互式输入 API Token、Base URL 和 Model
 
 **🔐 安全说明**：
 - API Token 输入时不会显示在屏幕上

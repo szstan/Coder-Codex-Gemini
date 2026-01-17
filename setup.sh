@@ -151,9 +151,52 @@ if [ "$MCP_REGISTERED" = false ]; then
 fi
 
 # ==============================================================================
-# Step 4: Install Skills
+# Step 4: Install additional MCP servers
 # ==============================================================================
-write_step "Step 4: Installing Skills..."
+write_step "Step 4: Installing additional MCP servers..."
+
+# Check if npm is installed
+if ! command -v npm &> /dev/null; then
+    write_warning "npm is not installed, skipping additional MCP servers"
+    write_warning "To install npm: https://nodejs.org/"
+else
+    write_success "npm is installed"
+
+    # Install Ace MCP (semantic search)
+    write_step "Installing Ace MCP for semantic search..."
+    if npm list -g acemcp-node &> /dev/null; then
+        write_success "acemcp-node is already installed"
+    else
+        if npm install -g acemcp-node; then
+            write_success "acemcp-node installed successfully"
+        else
+            write_warning "Failed to install acemcp-node, you can install it manually later"
+        fi
+    fi
+
+    # Register Ace MCP server
+    write_step "Registering Ace MCP server..."
+    claude mcp remove acemcp --scope user 2>/dev/null || true
+    if claude mcp add acemcp --scope user --transport stdio -- npx acemcp-node 2>&1; then
+        write_success "Ace MCP server registered"
+    else
+        write_warning "Failed to register Ace MCP server, you can register it manually later"
+    fi
+
+    # Register Playwright MCP server (for testing)
+    write_step "Registering Playwright MCP server for testing..."
+    claude mcp remove playwright --scope user 2>/dev/null || true
+    if claude mcp add playwright --scope user --transport stdio -- npx -y @executeautomation/playwright-mcp-server 2>&1; then
+        write_success "Playwright MCP server registered"
+    else
+        write_warning "Failed to register Playwright MCP server, you can register it manually later"
+    fi
+fi
+
+# ==============================================================================
+# Step 5: Install Skills
+# ==============================================================================
+write_step "Step 5: Installing Skills..."
 
 SKILLS_DIR="$HOME/.claude/skills"
 CCG_WORKFLOW_SOURCE="$SCRIPT_DIR/skills/ccg-workflow"
@@ -165,30 +208,31 @@ if [ ! -d "$SKILLS_DIR" ]; then
     write_success "Created skills directory: $SKILLS_DIR"
 fi
 
-# Copy ccg-workflow skill
-if [ -d "$CCG_WORKFLOW_SOURCE" ]; then
-    DEST="$SKILLS_DIR/ccg-workflow"
-    rm -rf "$DEST"
-    cp -r "$CCG_WORKFLOW_SOURCE" "$DEST"
-    write_success "Installed ccg-workflow skill"
-else
-    write_warning "ccg-workflow skill not found, skipping"
-fi
+# Install all skills from skills directory
+SKILLS_SOURCE_DIR="$SCRIPT_DIR/skills"
+INSTALLED_COUNT=0
+SKIPPED_COUNT=0
 
-# Copy gemini-collaboration skill
-if [ -d "$GEMINI_COLLAB_SOURCE" ]; then
-    DEST="$SKILLS_DIR/gemini-collaboration"
-    rm -rf "$DEST"
-    cp -r "$GEMINI_COLLAB_SOURCE" "$DEST"
-    write_success "Installed gemini-collaboration skill"
+if [ -d "$SKILLS_SOURCE_DIR" ]; then
+    for skill_dir in "$SKILLS_SOURCE_DIR"/*; do
+        if [ -d "$skill_dir" ]; then
+            skill_name=$(basename "$skill_dir")
+            DEST="$SKILLS_DIR/$skill_name"
+            rm -rf "$DEST"
+            cp -r "$skill_dir" "$DEST"
+            write_success "Installed $skill_name skill"
+            INSTALLED_COUNT=$((INSTALLED_COUNT + 1))
+        fi
+    done
+    write_success "Installed $INSTALLED_COUNT skills"
 else
-    write_warning "gemini-collaboration skill not found, skipping"
+    write_warning "Skills directory not found, skipping"
 fi
 
 # ==============================================================================
-# Step 5: Configure global CLAUDE.md
+# Step 6: Configure global CLAUDE.md
 # ==============================================================================
-write_step "Step 5: Configuring global CLAUDE.md..."
+write_step "Step 6: Configuring global CLAUDE.md..."
 
 CLAUDE_MD_PATH="$HOME/.claude/CLAUDE.md"
 CCG_MARKER="# CCG Configuration"
@@ -224,9 +268,9 @@ else
 fi
 
 # ==============================================================================
-# Step 6: Configure Coder
+# Step 7: Configure Coder
 # ==============================================================================
-write_step "Step 6: Configuring Coder..."
+write_step "Step 7: Configuring Coder..."
 
 CONFIG_DIR="$HOME/.ccg-mcp"
 CONFIG_PATH="$CONFIG_DIR/config.toml"

@@ -6,6 +6,7 @@
 ## 强制规则
 
 - **默认协作**：所有代码/文档改动任务，**必须**委托 Coder 执行，阶段性完成后**必须**调用 Codex 审核
+- **Git 安全检查**：在调用 Coder/Gemini 改动代码前，**必须**先执行 `/ccg-git-safety` 创建安全点
 - **跳过需确认**：若判断无需协作，**必须立即暂停**并报告：
   > "这是一个简单的[描述]任务，我判断无需调用 Coder/Codex。是否同意？等待您的确认。"
 - **违规即终止**：未经确认跳过 Coder 执行或 Codex 审核 = **流程违规**
@@ -21,11 +22,15 @@
 | `mcp__ccg__coder` | `/ccg-workflow` | 必须先执行 |
 | `mcp__ccg__codex` | `/ccg-workflow` | 必须先执行 |
 | `mcp__ccg__gemini` | `/gemini-collaboration` | 必须先执行 |
-| Contract 创建 | `/ccg:contract` | 复杂任务前执行 |
-| Coder 执行后验收 | `/ccg:review` | 自动执行 |
-| Codex 审核门禁 | `/ccg:codex-gate` | Codex 审核前执行 |
-| 配置检查点 | `/ccg:checkpoint` | 定期自动执行 |
-| 测试失败修复 | `/ccg:test-fix` 或 `/ccg:test-fix-advanced` | 按需执行 |
+| Git 安全检查 | `/ccg-git-safety` | 改动代码前强制执行 |
+| 编写计划 | `/ccg-plan` | 复杂任务前执行 |
+| 执行计划 | `/ccg-execute` | 执行实施计划 |
+| 并行任务 | `/ccg-parallel` | 多任务并行执行 |
+| Contract 创建 | `/ccg-contract` | 复杂任务前执行 |
+| Coder 执行后验收 | `/ccg-review` | 自动执行 |
+| Codex 审核门禁 | `/ccg-codex-gate` | Codex 审核前执行 |
+| 配置检查点 | `/ccg-checkpoint` | 定期自动执行 |
+| 测试失败修复 | `/ccg-test-fix` 或 `/ccg-test-fix-advanced` | 按需执行 |
 | Codex 企业级 Review | `/codex-code-review-enterprise` | 按需执行 |
 
 **执行流程**：
@@ -72,6 +77,23 @@
 2. 列出需要修改的文件清单
 3. 复杂问题可先与 Codex 或 Gemini 沟通方案
 
+## Codex + Gemini 双顾问协作模式
+
+**适用场景**：复杂前端问题，单独使用 Gemini 无法完全理解或解决时。
+
+**核心流程**：
+```
+Codex 先行（架构分析）→ Gemini 执行（基于指导实现）→ Codex 审核（质量把关）
+```
+
+**触发条件**（满足任一即可）：
+- 复杂前端架构（状态管理、组件设计、性能优化）
+- 不确定最佳实践，需要先明确技术方案
+- 高质量要求，需要严格的代码审核
+- Gemini 单独处理失败或理解不完整
+
+**详细说明**：参见 `/gemini-collaboration` Skill
+
 ## AI 治理框架
 
 CCG 提供完整的 AI 治理框架，确保代码质量和工作流规范。
@@ -91,11 +113,11 @@ CCG 提供完整的 AI 治理框架，确保代码质量和工作流规范。
 **已集成工具（克隆项目后自动可用）**：
 - ✅ **CCG Skills**（12 个）：
   - 协作流程：`/ccg-workflow`、`/gemini-collaboration`
-  - 任务管理：`/ccg:plan`、`/ccg:execute`、`/ccg:parallel`
-  - Contract 管理：`/ccg:contract`、`/ccg:codex-gate`
-  - 质量保障：`/ccg:review`、`/codex-code-review-enterprise`
-  - 测试修复：`/ccg:test-fix`、`/ccg:test-fix-advanced`
-  - 配置管理：`/ccg:checkpoint`
+  - 任务管理：`/ccg-plan`、`/ccg-execute`、`/ccg-parallel`
+  - Contract 管理：`/ccg-contract`、`/ccg-codex-gate`
+  - 质量保障：`/ccg-review`、`/codex-code-review-enterprise`
+  - 测试修复：`/ccg-test-fix`、`/ccg-test-fix-advanced`
+  - 配置管理：`/ccg-checkpoint`
 - ✅ **OpenSpec-CN**（3 个命令）：`openspec:proposal`、`openspec:apply`、`openspec:archive`
 - ✅ **Superpowers Skills**：Claude Code 官方插件，自动安装（包括 brainstorming、test-driven-development、systematic-debugging 等）
 
@@ -126,14 +148,14 @@ CCG 提供完整的 AI 治理框架，确保代码质量和工作流规范。
 
 ### 规划与执行分离
 
-**规划生成器**：`/ccg:plan`
+**规划生成器**：`/ccg-plan`
 - 为复杂任务生成详细的实施计划
 - 计划保存到 `ai/plans/<task-name>.md`
 - 支持用户审查和修改计划
 - 计划可在新会话中执行（避免上下文丢失）
 - 计划可复用和分享
 
-**计划执行器**：`/ccg:execute`
+**计划执行器**：`/ccg-execute`
 - 执行已生成的实施计划
 - 支持跨会话执行（读取计划文件）
 - 逐步执行并记录详细日志
@@ -154,7 +176,7 @@ CCG 提供完整的 AI 治理框架，确保代码质量和工作流规范。
 
 ### 并行任务执行
 
-**并行任务执行器**：`/ccg:parallel`
+**并行任务执行器**：`/ccg-parallel`
 - 将大型任务拆分为多个独立子任务并行执行
 - 支持任务依赖管理和分批执行
 - 使用 Claude Code 的 Task 工具实现真正的并行调度

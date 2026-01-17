@@ -7,9 +7,20 @@
 from __future__ import annotations
 
 import os
-import tomllib
+import sys
 from pathlib import Path
 from typing import Any
+
+# Python 3.11+ 使用内置 tomllib，3.10 使用 tomli
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    try:
+        import tomli as tomllib
+    except ImportError:
+        raise ImportError(
+            "Python 3.10 需要安装 tomli 库。请运行: pip install tomli"
+        )
 
 
 class ConfigError(Exception):

@@ -30,10 +30,18 @@ ENV/
 .vscode/
 *.swp
 *.swo
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
 
 # OS
 .DS_Store
 Thumbs.db
+*.log
+desktop.ini
+ehthumbs.db
 
 # Project specific
 docs/
@@ -56,3 +64,26 @@ uv.lock
 # Temporary files
 new*/
 nul
+*.tmp
+*.temp
+
+# Test coverage
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.tox/
+coverage.xml
+*.cover
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Ruff
+.ruff_cache/
