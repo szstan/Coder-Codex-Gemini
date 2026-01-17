@@ -47,20 +47,62 @@ npm install -g acemcp-node
 - 代码重构和改进（查找类似实现模式）
 - 问题诊断（查找相关的辅助函数和工具类）
 
-## CCG Skills（内置）
+## Claude Code Skills
 
-### 核心 Skills
+### 1. CCG Skills（项目内置）
 
 | Skill 名称 | 用途 | 调用方式 |
 |-----------|------|---------|
 | `/ccg-workflow` | CCG 协作流程指导 | 调用 Coder/Codex 前必须先执行 |
 | `/gemini-collaboration` | Gemini 协作指南 | 调用 Gemini 前必须先执行 |
+| `/ccg:plan` | 规划生成器 | 为复杂任务生成详细实施计划 |
+| `/ccg:execute` | 计划执行器 | 执行已生成的实施计划 |
+| `/ccg:parallel` | 并行任务执行器 | 将大型任务拆分为多个独立子任务并行执行 |
 
 **位置**：`skills/` 目录
 
 **使用规则**：
 - 在调用任何 CCG MCP 工具之前，必须先执行对应的 Skill
 - Skills 提供最佳实践指导和 Prompt 模板
+
+### 2. Superpowers Skills（官方插件，强烈推荐）
+
+**来源**：Claude Code 官方插件（自动安装）
+
+**核心 Skills**：
+
+| Skill 名称 | 用途 | 使用场景 |
+|-----------|------|---------|
+| `/superpowers:brainstorming` | 创意探索和需求分析 | 创建功能、构建组件、修改行为前必须使用 |
+| `/superpowers:writing-plans` | 编写实施计划 | 多步骤任务，需要用户审查计划 |
+| `/superpowers:executing-plans` | 执行实施计划 | 有书面实施计划需要执行时 |
+| `/superpowers:test-driven-development` | 测试驱动开发 | 实现任何功能或 bugfix 前使用 |
+| `/superpowers:systematic-debugging` | 系统化调试 | 遇到 bug、测试失败或意外行为时 |
+| `/superpowers:requesting-code-review` | 请求代码审核 | 完成任务、实现主要功能或合并前 |
+| `/superpowers:verification-before-completion` | 完成前验证 | 声称工作完成、修复或通过前必须使用 |
+
+**位置**：`~/.claude/plugins/cache/claude-plugins-official/superpowers/`
+
+**安装状态**：Claude Code 自动安装和更新
+
+### 3. OpenSpec-CN（规范驱动开发，可选）
+
+**来源**：OpenSpec 中文版工具
+
+**核心命令**：
+
+| 命令 | 用途 | 使用场景 |
+|------|------|---------|
+| `openspec:proposal` | 创建变更提案 | 添加功能、重大变更、架构变更 |
+| `openspec:apply` | 应用变更 | 实施已批准的提案 |
+| `openspec:archive` | 归档变更 | 部署后归档变更 |
+
+**位置**：`.claude/commands/openspec/`
+
+**使用场景**：
+- 需要规范驱动开发流程
+- 多人协作项目
+- 需要变更追踪和审批流程
 
 ## 各阶段依赖清单
 
@@ -270,6 +312,43 @@ npx acemcp-node --version
 - 检查 Skill 文件格式是否正确
 - 重启 Claude Code
 
+### Q5: Superpowers Skills 是什么？必须使用吗？
+
+**A**: Superpowers 是 Claude Code 官方插件，提供最佳实践工作流。
+
+**核心价值**：
+- **自动安装**：Claude Code 自动安装和更新，无需手动配置
+- **最佳实践**：提供经过验证的开发工作流程
+- **质量保障**：确保代码质量和开发规范
+
+**是否必须使用**：
+- ❌ 不是强制要求
+- ✅ 强烈推荐使用，特别是以下场景：
+  - 创建新功能前使用 `/superpowers:brainstorming`
+  - 实现功能前使用 `/superpowers:test-driven-development`
+  - 遇到 bug 时使用 `/superpowers:systematic-debugging`
+  - 完成工作前使用 `/superpowers:verification-before-completion`
+
+### Q6: OpenSpec-CN 是什么？什么时候需要使用？
+
+**A**: OpenSpec-CN 是规范驱动开发工具，用于管理变更提案和规范。
+
+**核心价值**：
+- **规范驱动**：先写规范，再写代码，确保需求明确
+- **变更追踪**：记录所有变更的提案、设计和实施过程
+- **审批流程**：支持提案审批，避免盲目开发
+
+**使用场景**：
+- ✅ 多人协作项目（需要变更审批）
+- ✅ 大型功能开发（需要详细规范）
+- ✅ 架构变更（需要设计文档）
+- ❌ 小型个人项目（可选）
+- ❌ 简单 bug 修复（不需要）
+
+**是否必须使用**：
+- ❌ 不是强制要求
+- ✅ 推荐用于企业级项目和多人协作
+
 ## 总结
 
 ### 核心依赖关系
@@ -283,10 +362,12 @@ CCG 系统
 │
 ├── 推荐组件
 │   ├── mcp__ccg__codex（代码审核）
-│   └── mcp__acemcp__search_context（语义搜索）
+│   ├── mcp__acemcp__search_context（语义搜索）
+│   └── Superpowers Skills（官方插件，自动安装）
 │
 └── 可选组件
-    └── mcp__ccg__gemini（专家咨询）
+    ├── mcp__ccg__gemini（专家咨询）
+    └── OpenSpec-CN（规范驱动开发）
 ```
 
 ### 快速参考表
