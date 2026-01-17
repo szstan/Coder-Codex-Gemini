@@ -61,6 +61,7 @@ npm install -g acemcp-node
 | `/ccg:contract` | Contract 创建和检查 | 复杂任务前创建 Contract（15-20 分钟） |
 | `/ccg:review` | Claude 验收检查清单 | Coder 执行后快速验收（5-10 分钟） |
 | `/ccg:codex-gate` | Codex 审核门禁 | Codex 审核前明确 Blocking 规则 |
+| `/ccg:checkpoint` | 配置检查点 | 定期重申核心配置和状态（每完成主要任务后） |
 | `/ccg:test-fix` | 测试失败自动修复 | 单层 Coder 修复（最多 3 次重试） |
 | `/ccg:test-fix-advanced` | 测试失败多层级修复 | 4 层修复策略（Coder → Codex → Claude → Gemini） |
 | `/codex-code-review-enterprise` | 企业级 PR 代码评审 | 严格范围内的评审，按优先级输出问题清单 |
@@ -171,6 +172,47 @@ npm install -g acemcp-node
 
 **文档参考**：
 - `skills/gemini-collaboration/skill.md` - Gemini 协作指南
+
+### 阶段 6：配置持久化和状态管理
+
+**核心问题**：长期工作后容易忘记初始配置，SESSION_ID 丢失或混用。
+
+**使用的工具**：
+- ✅ `/ccg:checkpoint` Skill - 定期重申核心配置和状态
+- ✅ `.ccg/state.json` - 状态文件持久化
+
+**状态文件位置**：`.ccg/state.json`
+
+**状态文件内容**：
+```json
+{
+  "version": "1.0",
+  "session_ids": {
+    "coder": "",
+    "codex": "",
+    "gemini": ""
+  },
+  "current_contract": "",
+  "workflow_stage": "idle",
+  "mandatory_rules": [
+    "所有代码改动必须委托 Coder 执行",
+    "Coder 完成后必须 Claude 验收（/ccg:review）",
+    "阶段性完成后必须 Codex 审核（/ccg:codex-gate）",
+    "必须保存和复用 SESSION_ID"
+  ],
+  "checkpoint_counter": 0,
+  "last_checkpoint": ""
+}
+```
+
+**检查点触发时机**：
+- ✅ 每完成一个主要任务后
+- ✅ 对话轮次达到阈值（建议 50 轮）
+- ✅ 用户明确请求（调用 `/ccg:checkpoint`）
+
+**文档参考**：
+- `skills/ccg-checkpoint/skill.md` - 检查点 Skill 说明
+- `.ccg/state.json` - 状态文件模板
 
 ## 初始化检查清单
 

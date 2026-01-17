@@ -39,6 +39,9 @@ Thumbs.db
 docs/
 reference/
 
+# CCG state files (project-specific runtime state)
+.ccg/
+
 # Secrets
 config.toml
 *.env

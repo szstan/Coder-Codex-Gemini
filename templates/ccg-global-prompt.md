@@ -24,6 +24,7 @@
 | Contract 创建 | `/ccg:contract` | 复杂任务前执行 |
 | Coder 执行后验收 | `/ccg:review` | 自动执行 |
 | Codex 审核门禁 | `/ccg:codex-gate` | Codex 审核前执行 |
+| 配置检查点 | `/ccg:checkpoint` | 定期自动执行 |
 | 测试失败修复 | `/ccg:test-fix` 或 `/ccg:test-fix-advanced` | 按需执行 |
 | Codex 企业级 Review | `/codex-code-review-enterprise` | 按需执行 |
 
@@ -88,12 +89,13 @@ CCG 提供完整的 AI 治理框架，确保代码质量和工作流规范。
 - **可选**：`mcp__ccg__gemini`（专家咨询）
 
 **已集成工具（克隆项目后自动可用）**：
-- ✅ **CCG Skills**（11 个）：
+- ✅ **CCG Skills**（12 个）：
   - 协作流程：`/ccg-workflow`、`/gemini-collaboration`
   - 任务管理：`/ccg:plan`、`/ccg:execute`、`/ccg:parallel`
   - Contract 管理：`/ccg:contract`、`/ccg:codex-gate`
   - 质量保障：`/ccg:review`、`/codex-code-review-enterprise`
   - 测试修复：`/ccg:test-fix`、`/ccg:test-fix-advanced`
+  - 配置管理：`/ccg:checkpoint`
 - ✅ **OpenSpec-CN**（3 个命令）：`openspec:proposal`、`openspec:apply`、`openspec:archive`
 - ✅ **Superpowers Skills**：Claude Code 官方插件，自动安装（包括 brainstorming、test-driven-development、systematic-debugging 等）
 
