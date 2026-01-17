@@ -147,6 +147,28 @@ CCG 提供完整的 AI 治理框架，确保代码质量和工作流规范。
 - 包含 flaky tests 处理策略（立即修复或禁用，不允许合并）
 - 覆盖率验证工具配置（pytest-cov、Jest 等）
 
+### Git 工作流
+
+**Git 提交和推送规范**：`ai/git_workflow.md`
+- 定义测试完成后的 Git 提交流程（测试通过 + Codex 审核通过后才提交）
+- 提交信息规范（Conventional Commits 格式）
+- 分支策略（feature/bugfix/hotfix 分支模型）
+- 推送时机和 CI/CD 集成
+- 与 CCG 工作流的集成点（Codex 审核通过后立即提交并推送）
+
+### 环境准备
+
+**环境检查清单**：`ai/environment_setup.md`
+- 项目启动前的环境验证（通用工具 + CCG 工具链 + 语言特定环境）
+- 环境验证脚本（Python/Node.js）
+- 常见环境问题排查
+- 首次克隆项目后的完整设置流程
+
+**项目配置模板**：`ai/project_settings.template.json`
+- 项目环境配置持久化方案
+- 包含项目信息、开发环境、CCG 配置、测试策略、代码质量工具、Git 规范等
+- 用于保存和验证项目开发环境
+
 ## Gemini 触发场景
 
 - **用户明确要求**：用户指定使用 Gemini

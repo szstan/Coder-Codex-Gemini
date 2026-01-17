@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CCG Project Settings",
+  "description": "项目环境配置模板，用于保存和验证项目开发环境",
+  "project": {
+    "name": "项目名称",
+    "version": "1.0.0",
+    "description": "项目描述",
+    "repository": "https://github.com/user/repo.git"
+  },
+  "environment": {
+    "language": "python",
+    "languageVersion": "3.11",
+    "packageManager": "pip",
+    "requiredTools": [
+      {
+        "name": "python",
+        "version": ">=3.8",
+        "verifyCommand": "python --version"
+      },
+      {
+        "name": "git",
+        "version": ">=2.0",
+        "verifyCommand": "git --version"
+      },
+      {
+        "name": "pytest",
+        "version": ">=7.0",
+        "verifyCommand": "pytest --version"
+      }
+    ]
+  },
+  "ccg": {
+    "enabled": true,
+    "coder": {
+      "model": "glm-4.7",
+      "configPath": "~/.ccg-mcp/config.toml"
+    },
+    "codex": {
+      "enabled": true,
+      "reviewRequired": true
+    },
+    "gemini": {
+      "enabled": false,
+      "useCases": ["frontend", "ui-design"]
+    }
+  },
+  "testing": {
+    "framework": "pytest",
+    "coverageTarget": {
+      "high": 90,
+      "medium": 80,
+      "low": 60
+    },
+    "testCommand": "pytest tests/",
+    "coverageCommand": "pytest tests/ --cov=src --cov-report=term-missing"
+  },
+  "codeQuality": {
+    "formatter": "black",
+    "linter": "flake8",
+    "typeChecker": "mypy",
+    "formatCommand": "black .",
+    "lintCommand": "flake8 src/ tests/"
+  },
+  "git": {
+    "mainBranch": "main",
+    "developBranch": "develop",
+    "commitMessageFormat": "conventional",
+    "requireTestsBeforeCommit": true,
+    "requireCodexReviewBeforeCommit": true
+  },
+  "database": {
+    "type": "postgresql",
+    "host": "localhost",
+    "port": 5432,
+    "name": "mydb_dev"
+  },
+  "envVariables": {
+    "required": [
+      "DATABASE_URL",
+      "API_KEY"
+    ],
+    "optional": [
+      "DEBUG",
+      "LOG_LEVEL"
+    ]
+  }
+}

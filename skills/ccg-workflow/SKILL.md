@@ -51,6 +51,13 @@ description: |
 - `ai/failure_path_testing.md`（Failure path 测试指南）
 - `ai/test_acceptance_criteria.md`（测试验收标准）
 
+**Git 工作流**：
+- `ai/git_workflow.md`（Git 提交和推送规范、分支策略、与 CCG 集成）
+
+**环境准备**：
+- `ai/environment_setup.md`（环境检查清单、验证脚本）
+- `ai/project_settings.template.json`（项目配置模板）
+
 **项目上下文**（可选）：
 - `ai/PROJECT_CONTEXT.md`（项目特定上下文）
 
