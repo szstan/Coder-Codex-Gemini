@@ -71,6 +71,25 @@
 
 CCG 提供完整的 AI 治理框架，确保代码质量和工作流规范。
 
+### 系统依赖清单
+
+**依赖文档**：`ai/DEPENDENCIES.md`
+- 列出 CCG 系统在各个阶段使用的 Skill、MCP 工具和技术依赖
+- 提供完整的初始化配置指南
+- 包含常见问题和解决方案
+
+**核心依赖**：
+- **必需**：CCG MCP 服务器、`mcp__ccg__coder`、Claude Code 基础工具
+- **推荐**：`mcp__ccg__codex`（代码审核）、`mcp__acemcp__search_context`（语义搜索）
+- **可选**：`mcp__ccg__gemini`（专家咨询）
+
+**初始化步骤**：
+1. 安装 CCG MCP 服务器
+2. 配置 `~/.ccg-mcp/config.toml`
+3. 安装 acemcp（`npm install -g acemcp-node`）
+4. 配置 Claude Code 全局 Prompt
+5. 验证配置
+
 ### 实施合约系统
 
 **何时需要写合约**：
