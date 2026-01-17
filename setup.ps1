@@ -540,21 +540,40 @@ if ($DryRun) {
         }
 
         if (-not $skipCoderConfig) {
+            # Display API Token instructions
+            Write-Host ""
+            Write-Host "==================================================================" -ForegroundColor Cyan
+            Write-Host "  Coder Configuration - API Token Required" -ForegroundColor Cyan
+            Write-Host "==================================================================" -ForegroundColor Cyan
+            Write-Host ""
+            Write-Host "To get your API Token:" -ForegroundColor Yellow
+            Write-Host "  1. Visit: https://open.bigmodel.cn" -ForegroundColor White
+            Write-Host "  2. Sign up / Login to your account" -ForegroundColor White
+            Write-Host "  3. Navigate to 'API Keys' section" -ForegroundColor White
+            Write-Host "  4. Create a new API key and copy it" -ForegroundColor White
+            Write-Host ""
+            Write-Host "Default Configuration:" -ForegroundColor Yellow
+            Write-Host "  Base URL: https://open.bigmodel.cn/api/anthropic" -ForegroundColor White
+            Write-Host "  Model:    glm-4.7" -ForegroundColor White
+            Write-Host ""
+            Write-Host "==================================================================" -ForegroundColor Cyan
+            Write-Host ""
+
             # Prompt for API Token
-            $apiToken = Read-Host "Enter your API Token"
+            $apiToken = Read-Host "Enter your API Token (required)"
             if ([string]::IsNullOrWhiteSpace($apiToken)) {
                 Write-ErrorMsg "API Token is required"
                 exit 1
             }
 
             # Prompt for Base URL (optional)
-            $baseUrl = Read-Host "Enter Base URL (default: https://open.bigmodel.cn/api/anthropic)"
+            $baseUrl = Read-Host "Enter Base URL (press Enter for default: https://open.bigmodel.cn/api/anthropic)"
             if ([string]::IsNullOrWhiteSpace($baseUrl)) {
                 $baseUrl = "https://open.bigmodel.cn/api/anthropic"
             }
 
             # Prompt for Model (optional)
-            $model = Read-Host "Enter Model (default: glm-4.7)"
+            $model = Read-Host "Enter Model (press Enter for default: glm-4.7)"
             if ([string]::IsNullOrWhiteSpace($model)) {
                 $model = "glm-4.7"
             }

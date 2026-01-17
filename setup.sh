@@ -299,8 +299,27 @@ if [ -f "$CONFIG_PATH" ]; then
     fi
 fi
 
+# Display API Token instructions
+echo ""
+echo -e "${CYAN}==================================================================${NC}"
+echo -e "${CYAN}  Coder Configuration - API Token Required${NC}"
+echo -e "${CYAN}==================================================================${NC}"
+echo ""
+echo -e "${YELLOW}To get your API Token:${NC}"
+echo "  1. Visit: https://open.bigmodel.cn"
+echo "  2. Sign up / Login to your account"
+echo "  3. Navigate to 'API Keys' section"
+echo "  4. Create a new API key and copy it"
+echo ""
+echo -e "${YELLOW}Default Configuration:${NC}"
+echo "  Base URL: https://open.bigmodel.cn/api/anthropic"
+echo "  Model:    glm-4.7"
+echo ""
+echo -e "${CYAN}==================================================================${NC}"
+echo ""
+
 # Prompt for API Token (hidden input)
-read -s -p "Enter your API Token: " API_TOKEN
+read -s -p "Enter your API Token (required): " API_TOKEN
 echo
 if [ -z "$API_TOKEN" ]; then
     write_error "API Token is required"
@@ -308,13 +327,13 @@ if [ -z "$API_TOKEN" ]; then
 fi
 
 # Prompt for Base URL (optional)
-read -p "Enter Base URL (default: https://open.bigmodel.cn/api/anthropic): " BASE_URL
+read -p "Enter Base URL (press Enter for default: https://open.bigmodel.cn/api/anthropic): " BASE_URL
 if [ -z "$BASE_URL" ]; then
     BASE_URL="https://open.bigmodel.cn/api/anthropic"
 fi
 
 # Prompt for Model (optional)
-read -p "Enter Model (default: glm-4.7): " MODEL
+read -p "Enter Model (press Enter for default: glm-4.7): " MODEL
 if [ -z "$MODEL" ]; then
     MODEL="glm-4.7"
 fi
