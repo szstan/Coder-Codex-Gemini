@@ -352,6 +352,24 @@ if (-not $gitBashPath -or -not (Test-Path $gitBashPath)) {
 # ==============================================================================
 Write-Step "Step 4: Installing additional MCP servers..."
 
+# Reuse Git Bash check from Step 3
+$gitBashPath = $env:CLAUDE_CODE_GIT_BASH_PATH
+if (-not $gitBashPath) {
+    $commonPaths = @(
+        "C:\Program Files\Git\bin\bash.exe",
+        "C:\Program Files (x86)\Git\bin\bash.exe",
+        "$env:LOCALAPPDATA\Programs\Git\bin\bash.exe"
+    )
+    foreach ($path in $commonPaths) {
+        if (Test-Path $path) {
+            $gitBashPath = $path
+            break
+        }
+    }
+}
+
+$gitBashAvailable = ($gitBashPath -and (Test-Path $gitBashPath))
+
 # Check if npm is installed
 $npmInstalled = $false
 try {
@@ -380,32 +398,42 @@ if ($npmInstalled -and -not $DryRun) {
 
     # Register Ace MCP server
     Write-Step "Registering Ace MCP server..."
-    $null = & claude @("mcp","remove","acemcp","--scope","user") 2>&1
-    try {
-        $null = & claude @("mcp","add","acemcp","--scope","user","--transport","stdio","--","npx","acemcp-node") 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            Write-Success "Ace MCP server registered"
-        } else {
+    if (-not $gitBashAvailable) {
+        Write-WarningMsg "Git Bash not found. Skipping Ace MCP registration."
+        Write-WarningMsg "Install Git Bash and run: claude mcp add acemcp -s user --transport stdio -- npx acemcp-node"
+    } else {
+        $null = & claude @("mcp","remove","acemcp","--scope","user") 2>&1
+        try {
+            $null = & claude @("mcp","add","acemcp","--scope","user","--transport","stdio","--","npx","acemcp-node") 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Write-Success "Ace MCP server registered"
+            } else {
+                Write-WarningMsg "Failed to register Ace MCP server, you can register it manually later"
+            }
+        } catch {
             Write-WarningMsg "Failed to register Ace MCP server, you can register it manually later"
         }
-    } catch {
-        Write-WarningMsg "Failed to register Ace MCP server, you can register it manually later"
     }
 
     # Register Playwright MCP server (for testing)
     Write-Step "Registering Playwright MCP server for testing..."
-    try {
-        $null = & claude @("mcp","remove","playwright","--scope","user") 2>&1
-        $playwrightOutput = & claude @("mcp","add","playwright","--scope","user","--transport","stdio","-e","SYSTEMROOT=C:\Windows","--","cmd","/c","npx","-y","@executeautomation/playwright-mcp-server") 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            Write-Success "Playwright MCP server registered"
-        } else {
-            Write-WarningMsg "Failed to register Playwright MCP server"
+    if (-not $gitBashAvailable) {
+        Write-WarningMsg "Git Bash not found. Skipping Playwright MCP registration."
+        Write-WarningMsg "Install Git Bash and run: claude mcp add playwright -s user --transport stdio -e SYSTEMROOT=C:\Windows -- cmd /c npx -y @executeautomation/playwright-mcp-server"
+    } else {
+        try {
+            $null = & claude @("mcp","remove","playwright","--scope","user") 2>&1
+            $playwrightOutput = & claude @("mcp","add","playwright","--scope","user","--transport","stdio","-e","SYSTEMROOT=C:\Windows","--","cmd","/c","npx","-y","@executeautomation/playwright-mcp-server") 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Write-Success "Playwright MCP server registered"
+            } else {
+                Write-WarningMsg "Failed to register Playwright MCP server"
+                Write-WarningMsg "You can register it manually later"
+            }
+        } catch {
+            Write-WarningMsg "Failed to register Playwright MCP server: $_"
             Write-WarningMsg "You can register it manually later"
         }
-    } catch {
-        Write-WarningMsg "Failed to register Playwright MCP server: $_"
-        Write-WarningMsg "You can register it manually later"
     }
 } elseif ($DryRun) {
     Write-DryRun "Would check for npm installation"
