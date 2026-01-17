@@ -58,6 +58,9 @@ npm install -g acemcp-node
 | `/ccg:plan` | 规划生成器 | 为复杂任务生成详细实施计划 |
 | `/ccg:execute` | 计划执行器 | 执行已生成的实施计划 |
 | `/ccg:parallel` | 并行任务执行器 | 将大型任务拆分为多个独立子任务并行执行 |
+| `/ccg:review` | Claude 验收检查清单 | Coder 执行后快速验收（5-10 分钟） |
+| `/ccg:test-fix` | 测试失败自动修复 | 单层 Coder 修复（最多 3 次重试） |
+| `/ccg:test-fix-advanced` | 测试失败多层级修复 | 4 层修复策略（Coder → Codex → Claude → Gemini） |
 | `/codex-code-review-enterprise` | 企业级 PR 代码评审 | 严格范围内的评审，按优先级输出问题清单 |
 
 **位置**：`skills/` 目录
