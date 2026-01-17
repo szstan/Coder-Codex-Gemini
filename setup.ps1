@@ -362,56 +362,17 @@ if ($npmInstalled -and -not $DryRun) {
         Write-WarningMsg "Failed to register Ace MCP server, you can register it manually later"
     }
 
-    # Register Playwright MCP server (for testing) - using config file method
+    # Register Playwright MCP server (for testing)
     Write-Step "Registering Playwright MCP server for testing..."
     try {
-        $mcpConfigPath = "$env:USERPROFILE\.claude\mcp.json"
-
-        # Read existing config or create new one
-        if (Test-Path $mcpConfigPath) {
-            $jsonText = Get-Content $mcpConfigPath -Raw -Encoding UTF8
-            $mcpConfig = $jsonText | ConvertFrom-Json
+        $null = & claude @("mcp","remove","playwright","--scope","user") 2>&1
+        $playwrightOutput = & claude @("mcp","add","playwright","--scope","user","--transport","stdio","--","npx","-y","@executeautomation/playwright-mcp-server") 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Success "Playwright MCP server registered"
         } else {
-            $mcpConfig = [PSCustomObject]@{ mcpServers = [PSCustomObject]@{} }
+            Write-WarningMsg "Failed to register Playwright MCP server"
+            Write-WarningMsg "You can register it manually later"
         }
-
-        # Ensure mcpServers exists
-        if (-not $mcpConfig.mcpServers) {
-            $mcpConfig | Add-Member -NotePropertyName "mcpServers" -NotePropertyValue ([PSCustomObject]@{}) -Force
-        }
-
-        # Add or update Playwright MCP server with exact format
-        $playwrightConfig = [PSCustomObject]@{
-            command = "cmd"
-            args = @("/c", "npx", "-y", "@executeautomation/playwright-mcp-server")
-            env = [PSCustomObject]@{ SYSTEMROOT = "C:\Windows" }
-        }
-
-        # Add or update the playwright server
-        if ($mcpConfig.mcpServers.PSObject.Properties.Name -contains "playwright") {
-            $mcpConfig.mcpServers.playwright = $playwrightConfig
-        } else {
-            $mcpConfig.mcpServers | Add-Member -NotePropertyName "playwright" -NotePropertyValue $playwrightConfig -Force
-        }
-
-        # Convert to JSON with standard formatting using Python
-        $tempJsonPath = "$env:TEMP\mcp_config_temp.json"
-        $mcpConfig | ConvertTo-Json -Depth 10 -Compress | Out-File -FilePath $tempJsonPath -Encoding UTF8 -NoNewline
-
-        # Use Python to format JSON with standard 2-space indentation
-        $pythonScript = @"
-import json
-import sys
-with open('$($tempJsonPath.Replace('\', '\\'))', 'r', encoding='utf-8') as f:
-    data = json.load(f)
-with open('$($mcpConfigPath.Replace('\', '\\'))', 'w', encoding='utf-8', newline='\n') as f:
-    json.dump(data, f, indent=2, ensure_ascii=False)
-"@
-
-        python -c $pythonScript
-        Remove-Item $tempJsonPath -ErrorAction SilentlyContinue
-
-        Write-Success "Playwright MCP server registered"
     } catch {
         Write-WarningMsg "Failed to register Playwright MCP server: $_"
         Write-WarningMsg "You can register it manually later"
