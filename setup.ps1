@@ -366,7 +366,7 @@ if ($npmInstalled -and -not $DryRun) {
     Write-Step "Registering Playwright MCP server for testing..."
     try {
         $null = & claude @("mcp","remove","playwright","--scope","user") 2>&1
-        $playwrightOutput = & claude @("mcp","add","playwright","--scope","user","--transport","stdio","--","npx","-y","@executeautomation/playwright-mcp-server") 2>&1
+        $playwrightOutput = & claude @("mcp","add","playwright","--scope","user","--transport","stdio","-e","SYSTEMROOT=C:\Windows","--","cmd","/c","npx","-y","@executeautomation/playwright-mcp-server") 2>&1
         if ($LASTEXITCODE -eq 0) {
             Write-Success "Playwright MCP server registered"
         } else {
