@@ -83,6 +83,11 @@ CCG 提供完整的 AI 治理框架，确保代码质量和工作流规范。
 - **推荐**：`mcp__ccg__codex`（代码审核）、`mcp__acemcp__search_context`（语义搜索）
 - **可选**：`mcp__ccg__gemini`（专家咨询）
 
+**已集成工具（克隆项目后自动可用）**：
+- ✅ **CCG Skills**（6 个）：`/ccg-workflow`、`/gemini-collaboration`、`/ccg:plan`、`/ccg:execute`、`/ccg:parallel`、`/codex-code-review-enterprise`
+- ✅ **OpenSpec-CN**（3 个命令）：`openspec:proposal`、`openspec:apply`、`openspec:archive`
+- ✅ **Superpowers Skills**：Claude Code 官方插件，自动安装（包括 brainstorming、test-driven-development、systematic-debugging 等）
+
 **初始化步骤**：
 1. 安装 CCG MCP 服务器
 2. 配置 `~/.ccg-mcp/config.toml`

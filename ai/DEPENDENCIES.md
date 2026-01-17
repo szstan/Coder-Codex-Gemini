@@ -228,7 +228,12 @@ npm install -g acemcp-node
 npx acemcp-node --version
 ```
 
-### 步骤 5：配置 Claude Code
+### 步骤 5：配置 Claude Code 全局 Prompt（重要）
+
+> ⚠️ **为什么必须配置全局 Prompt？**
+> - **防止上下文过长时跑偏**：全局配置始终生效，不受对话长度影响
+> - **确保开发环境配置一致**：CCG 协作规则、工具说明等始终可用
+> - **避免重复说明**：无需每次对话都重复配置信息
 
 将 CCG 全局 Prompt 复制到 Claude Code 配置：
 
@@ -236,6 +241,13 @@ npx acemcp-node --version
 # 复制模板到全局配置
 cp templates/ccg-global-prompt.md ~/.claude/CLAUDE.md
 ```
+
+**全局配置包含的内容**：
+- CCG 协作规则（强制规则、Skill 前置条件）
+- 已集成工具说明（CCG Skills、OpenSpec-CN、Superpowers）
+- AI 治理框架概览
+- 核心依赖清单
+
 
 ### 步骤 6：验证配置
 
