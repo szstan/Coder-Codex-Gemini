@@ -58,6 +58,9 @@ description: |
 - `ai/environment_setup.md`（环境检查清单、验证脚本）
 - `ai/project_settings.template.json`（项目配置模板）
 
+**需求文档编写**：
+- `ai/requirement_guide.md`（需求文档编写指南、模板和案例）
+
 **项目上下文**（可选）：
 - `ai/PROJECT_CONTEXT.md`（项目特定上下文）
 
