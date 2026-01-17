@@ -486,7 +486,7 @@ if ($DryRun) {
 } else {
     try {
         if (!(Test-Path $claudeMdPath)) {
-            # Create new file with CCG config
+            # File doesn't exist - create new file with CCG config
             if (Test-Path $ccgConfigPath) {
                 Copy-Item $ccgConfigPath $claudeMdPath
                 Write-Success "Created global CLAUDE.md"
@@ -495,19 +495,53 @@ if ($DryRun) {
                 Write-WarningMsg "Please manually copy the CCG configuration to $claudeMdPath"
             }
         } else {
-            # Check if CCG config already exists
-            $content = Get-Content $claudeMdPath -Raw -Encoding UTF8
-            if ($content -match [regex]::Escape($ccgMarker)) {
-                Write-WarningMsg "CCG configuration already exists in CLAUDE.md, skipping"
-            } else {
-                # Append CCG config
-                if (Test-Path $ccgConfigPath) {
-                    $ccgContent = Get-Content $ccgConfigPath -Raw -Encoding UTF8
-                    Add-Content -Path $claudeMdPath -Value "`n$ccgContent" -Encoding UTF8
-                    Write-Success "Appended CCG configuration to CLAUDE.md"
-                } else {
-                    Write-WarningMsg "CCG global prompt template not found at $ccgConfigPath"
-                    Write-WarningMsg "Please manually copy the CCG configuration to $claudeMdPath"
+            # File exists - ask user what to do
+            Write-Host ""
+            Write-Host "CLAUDE.md already exists at: $claudeMdPath" -ForegroundColor Yellow
+            Write-Host ""
+            Write-Host "Choose an option:" -ForegroundColor Cyan
+            Write-Host "  1. Overwrite (replace entire file with CCG configuration)" -ForegroundColor White
+            Write-Host "  2. Append (add CCG configuration to end of file)" -ForegroundColor White
+            Write-Host "  3. Skip (keep existing file unchanged)" -ForegroundColor White
+            Write-Host ""
+
+            $choice = Read-Host "Enter your choice [1/2/3] (default: 3)"
+
+            if ([string]::IsNullOrWhiteSpace($choice)) {
+                $choice = "3"
+            }
+
+            switch ($choice) {
+                "1" {
+                    # Overwrite
+                    if (Test-Path $ccgConfigPath) {
+                        Copy-Item $ccgConfigPath $claudeMdPath -Force
+                        Write-Success "Overwritten CLAUDE.md with CCG configuration"
+                    } else {
+                        Write-WarningMsg "CCG global prompt template not found at $ccgConfigPath"
+                    }
+                }
+                "2" {
+                    # Append
+                    $content = Get-Content $claudeMdPath -Raw -Encoding UTF8
+                    if ($content -match [regex]::Escape($ccgMarker)) {
+                        Write-WarningMsg "CCG configuration already exists in CLAUDE.md, skipping"
+                    } else {
+                        if (Test-Path $ccgConfigPath) {
+                            $ccgContent = Get-Content $ccgConfigPath -Raw -Encoding UTF8
+                            Add-Content -Path $claudeMdPath -Value "`n$ccgContent" -Encoding UTF8
+                            Write-Success "Appended CCG configuration to CLAUDE.md"
+                        } else {
+                            Write-WarningMsg "CCG global prompt template not found at $ccgConfigPath"
+                        }
+                    }
+                }
+                "3" {
+                    # Skip
+                    Write-WarningMsg "Skipped CLAUDE.md configuration"
+                }
+                default {
+                    Write-WarningMsg "Invalid choice, skipping CLAUDE.md configuration"
                 }
             }
         }

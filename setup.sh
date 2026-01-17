@@ -242,7 +242,7 @@ CCG_CONFIG_PATH="$SCRIPT_DIR/templates/ccg-global-prompt.md"
 mkdir -p "$HOME/.claude"
 
 if [ ! -f "$CLAUDE_MD_PATH" ]; then
-    # Create new file with CCG config
+    # File doesn't exist - create new file with CCG config
     if [ -f "$CCG_CONFIG_PATH" ]; then
         cp "$CCG_CONFIG_PATH" "$CLAUDE_MD_PATH"
         write_success "Created global CLAUDE.md"
@@ -251,20 +251,53 @@ if [ ! -f "$CLAUDE_MD_PATH" ]; then
         write_warning "Please manually copy the CCG configuration to $CLAUDE_MD_PATH"
     fi
 else
-    # Check if CCG config already exists
-    if grep -qF "$CCG_MARKER" "$CLAUDE_MD_PATH"; then
-        write_warning "CCG configuration already exists in CLAUDE.md, skipping"
-    else
-        # Append CCG config
-        if [ -f "$CCG_CONFIG_PATH" ]; then
-            echo "" >> "$CLAUDE_MD_PATH"
-            cat "$CCG_CONFIG_PATH" >> "$CLAUDE_MD_PATH"
-            write_success "Appended CCG configuration to CLAUDE.md"
-        else
-            write_warning "CCG global prompt template not found at $CCG_CONFIG_PATH"
-            write_warning "Please manually copy the CCG configuration to $CLAUDE_MD_PATH"
-        fi
+    # File exists - ask user what to do
+    echo ""
+    echo -e "${YELLOW}CLAUDE.md already exists at: $CLAUDE_MD_PATH${NC}"
+    echo ""
+    echo -e "${CYAN}Choose an option:${NC}"
+    echo "  1. Overwrite (replace entire file with CCG configuration)"
+    echo "  2. Append (add CCG configuration to end of file)"
+    echo "  3. Skip (keep existing file unchanged)"
+    echo ""
+    read -p "Enter your choice [1/2/3] (default: 3): " choice
+
+    if [ -z "$choice" ]; then
+        choice="3"
     fi
+
+    case "$choice" in
+        1)
+            # Overwrite
+            if [ -f "$CCG_CONFIG_PATH" ]; then
+                cp -f "$CCG_CONFIG_PATH" "$CLAUDE_MD_PATH"
+                write_success "Overwritten CLAUDE.md with CCG configuration"
+            else
+                write_warning "CCG global prompt template not found at $CCG_CONFIG_PATH"
+            fi
+            ;;
+        2)
+            # Append
+            if grep -qF "$CCG_MARKER" "$CLAUDE_MD_PATH"; then
+                write_warning "CCG configuration already exists in CLAUDE.md, skipping"
+            else
+                if [ -f "$CCG_CONFIG_PATH" ]; then
+                    echo "" >> "$CLAUDE_MD_PATH"
+                    cat "$CCG_CONFIG_PATH" >> "$CLAUDE_MD_PATH"
+                    write_success "Appended CCG configuration to CLAUDE.md"
+                else
+                    write_warning "CCG global prompt template not found at $CCG_CONFIG_PATH"
+                fi
+            fi
+            ;;
+        3)
+            # Skip
+            write_warning "Skipped CLAUDE.md configuration"
+            ;;
+        *)
+            write_warning "Invalid choice, skipping CLAUDE.md configuration"
+            ;;
+    esac
 fi
 
 # ==============================================================================
