@@ -183,14 +183,42 @@ else
         write_warning "Failed to register Ace MCP server, you can register it manually later"
     fi
 
-    # Register Playwright MCP server (for testing)
+    # Register Playwright MCP server (for testing) - using config file method
     write_step "Registering Playwright MCP server for testing..."
-    claude mcp remove playwright --scope user 2>/dev/null || true
-    if claude mcp add playwright --scope user --transport stdio -- npx -y @executeautomation/playwright-mcp-server 2>&1; then
-        write_success "Playwright MCP server registered"
-    else
-        write_warning "Failed to register Playwright MCP server, you can register it manually later"
-    fi
+
+    MCP_CONFIG_PATH="$HOME/.claude/mcp.json"
+
+    # Create a Python script to update mcp.json with standard formatting
+    python3 -c "
+import json
+import os
+
+config_path = '$MCP_CONFIG_PATH'
+
+# Read existing config or create new one
+if os.path.exists(config_path):
+    with open(config_path, 'r', encoding='utf-8') as f:
+        config = json.load(f)
+else:
+    config = {'mcpServers': {}}
+
+# Ensure mcpServers exists
+if 'mcpServers' not in config:
+    config['mcpServers'] = {}
+
+# Add or update Playwright MCP server
+config['mcpServers']['playwright'] = {
+    'command': 'npx',
+    'args': ['-y', '@executeautomation/playwright-mcp-server']
+}
+
+# Save with standard 2-space indentation
+with open(config_path, 'w', encoding='utf-8') as f:
+    json.dump(config, f, indent=2, ensure_ascii=False)
+    f.write('\n')
+
+print('Success')
+" && write_success "Playwright MCP server registered" || write_warning "Failed to register Playwright MCP server"
 fi
 
 # ==============================================================================

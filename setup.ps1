@@ -369,23 +369,47 @@ if ($npmInstalled -and -not $DryRun) {
 
         # Read existing config or create new one
         if (Test-Path $mcpConfigPath) {
-            $mcpConfig = Get-Content $mcpConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
+            $jsonText = Get-Content $mcpConfigPath -Raw -Encoding UTF8
+            $mcpConfig = $jsonText | ConvertFrom-Json
         } else {
-            $mcpConfig = @{ mcpServers = @{} } | ConvertTo-Json -Depth 10 | ConvertFrom-Json
+            $mcpConfig = [PSCustomObject]@{ mcpServers = [PSCustomObject]@{} }
         }
 
-        # Add or update Playwright MCP server
-        $playwrightConfig = @{
+        # Ensure mcpServers exists
+        if (-not $mcpConfig.mcpServers) {
+            $mcpConfig | Add-Member -NotePropertyName "mcpServers" -NotePropertyValue ([PSCustomObject]@{}) -Force
+        }
+
+        # Add or update Playwright MCP server with exact format
+        $playwrightConfig = [PSCustomObject]@{
             command = "cmd"
             args = @("/c", "npx", "-y", "@executeautomation/playwright-mcp-server")
-            env = @{ SYSTEMROOT = "C:\Windows" }
+            env = [PSCustomObject]@{ SYSTEMROOT = "C:\Windows" }
         }
 
-        $mcpConfig.mcpServers | Add-Member -NotePropertyName "playwright" -NotePropertyValue $playwrightConfig -Force
+        # Add or update the playwright server
+        if ($mcpConfig.mcpServers.PSObject.Properties.Name -contains "playwright") {
+            $mcpConfig.mcpServers.playwright = $playwrightConfig
+        } else {
+            $mcpConfig.mcpServers | Add-Member -NotePropertyName "playwright" -NotePropertyValue $playwrightConfig -Force
+        }
 
-        # Save config file (UTF-8 without BOM)
-        $jsonContent = $mcpConfig | ConvertTo-Json -Depth 10
-        [System.IO.File]::WriteAllText($mcpConfigPath, $jsonContent, [System.Text.UTF8Encoding]::new($false))
+        # Convert to JSON with standard formatting using Python
+        $tempJsonPath = "$env:TEMP\mcp_config_temp.json"
+        $mcpConfig | ConvertTo-Json -Depth 10 -Compress | Out-File -FilePath $tempJsonPath -Encoding UTF8 -NoNewline
+
+        # Use Python to format JSON with standard 2-space indentation
+        $pythonScript = @"
+import json
+import sys
+with open('$($tempJsonPath.Replace('\', '\\'))', 'r', encoding='utf-8') as f:
+    data = json.load(f)
+with open('$($mcpConfigPath.Replace('\', '\\'))', 'w', encoding='utf-8', newline='\n') as f:
+    json.dump(data, f, indent=2, ensure_ascii=False)
+"@
+
+        python -c $pythonScript
+        Remove-Item $tempJsonPath -ErrorAction SilentlyContinue
 
         Write-Success "Playwright MCP server registered"
     } catch {
