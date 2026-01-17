@@ -89,6 +89,24 @@ CCG 提供完整的 AI 治理框架，确保代码质量和工作流规范。
 **Coder 质量指南**：`ai/coder_quality_guide.md`
 - 确保 Coder 输出符合质量标准
 - 包含代码规范和最佳实践
+- 引用完整的代码风格和设计规范体系
+
+**代码风格规范**：`ai/code_style_guide.md`
+- 通用代码风格规范（适用于所有编程语言）
+- 命名规范、代码格式化、注释规范、文件组织
+- 代码结构和最佳实践（DRY、KISS、单一职责）
+
+**设计原则**：`ai/design_principles.md`
+- SOLID 原则详解（单一职责、开闭、里氏替换、接口隔离、依赖倒置）
+- DRY、KISS、YAGNI 原则
+- 设计模式使用指南（工厂、策略、观察者）
+- 过度设计识别和避免
+- 依赖管理和 API 设计
+
+**语言特定规范**（根据项目技术栈选择）：
+- `ai/python_guide.md` - Python 项目专用规范（基于 PEP 8）
+- `ai/java_guide.md` - Java 项目专用规范（基于 Google Java Style Guide）
+- `ai/frontend_guide.md` - 前端项目专用规范（JavaScript/TypeScript/React/Vue）
 
 **Codex 审核门禁**：`ai/codex_review_gate.md`
 - 8 条机器可判定的 Blocking 规则

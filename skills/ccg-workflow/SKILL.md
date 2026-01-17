@@ -29,13 +29,32 @@ description: |
 某些项目会提供外部的工程约束与事实源（例如项目内 `ai/` 目录），用于保证执行与审核的一致性。
 
 当提供以下任一项时，视为 **权威上下文** 并注入到后续调用中：
+
+**核心约束**：
 - `ai/contracts/current.md`（本次变更的 Implementation Contract）
 - `ai/engineering_codex.md`（工程原则 / 默认判断）
 - `ai/implementer_guardrails.md`（实现边界）
 - `ai/codex_review_gate.md`（审核闸门）
-- `ai/PROJECT_CONTEXT.md`（项目上下文，可选）
 
-> 约束不要求 workflow 自动读取路径。  
+**质量标准**：
+- `ai/coder_quality_guide.md`（Coder 质量指南）
+- `ai/code_style_guide.md`（通用代码风格规范）
+- `ai/design_principles.md`（设计原则：SOLID、DRY、KISS、YAGNI）
+
+**语言特定规范**（根据项目技术栈选择）：
+- `ai/python_guide.md`（Python 项目专用规范）
+- `ai/java_guide.md`（Java 项目专用规范）
+- `ai/frontend_guide.md`（前端项目专用规范）
+
+**测试策略**：
+- `ai/testing_strategy.md`（测试类型决策树、覆盖率标准）
+- `ai/failure_path_testing.md`（Failure path 测试指南）
+- `ai/test_acceptance_criteria.md`（测试验收标准）
+
+**项目上下文**（可选）：
+- `ai/PROJECT_CONTEXT.md`（项目特定上下文）
+
+> 约束不要求 workflow 自动读取路径。
 > **由 Claude 在每次调用时显式把内容注入 Prompt**。
 
 ---
