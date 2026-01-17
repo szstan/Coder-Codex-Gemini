@@ -237,7 +237,7 @@ uv --version
 一键脚本默认使用远程安装方式，无需额外操作。如需手动安装：
 
 ```bash
-claude mcp add ccg -s user --transport stdio -- uvx --refresh --from git+https://github.com/FredericMN/Coder-Codex-Gemini.git ccg-mcp
+claude mcp add ccg -s user --transport stdio -- uvx --refresh --from git+https://github.com/szstan/Coder-Codex-Gemini.git ccg-mcp
 ```
 
 #### 本地安装（仅开发调试）

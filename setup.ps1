@@ -190,9 +190,9 @@ if ($DryRun) {
     } catch {}
 
     if ($useRefresh) {
-        Write-DryRun "Would run: claude mcp add ccg --scope user --transport stdio -- uvx --refresh --from git+https://github.com/FredericMN/Coder-Codex-Gemini.git ccg-mcp"
+        Write-DryRun "Would run: claude mcp add ccg --scope user --transport stdio -- uvx --refresh --from git+https://github.com/szstan/Coder-Codex-Gemini.git ccg-mcp"
     } else {
-        Write-DryRun "Would run: claude mcp add ccg --scope user --transport stdio -- uvx --from git+https://github.com/FredericMN/Coder-Codex-Gemini.git ccg-mcp"
+        Write-DryRun "Would run: claude mcp add ccg --scope user --transport stdio -- uvx --from git+https://github.com/szstan/Coder-Codex-Gemini.git ccg-mcp"
     }
     Write-Success "MCP server would be registered"
 } else {
@@ -237,7 +237,7 @@ if ($DryRun) {
             # Try with --refresh first
             $refreshSucceeded = $false
             try {
-                $refreshOutput = & claude @("mcp","add","ccg","--scope","user","--transport","stdio","--","uvx","--refresh","--from","git+https://github.com/FredericMN/Coder-Codex-Gemini.git","ccg-mcp") 2>&1
+                $refreshOutput = & claude @("mcp","add","ccg","--scope","user","--transport","stdio","--","uvx","--refresh","--from","git+https://github.com/szstan/Coder-Codex-Gemini.git","ccg-mcp") 2>&1
                 if ($LASTEXITCODE -eq 0) {
                     $refreshSucceeded = $true
                 }
@@ -258,7 +258,7 @@ if ($DryRun) {
                     Write-WarningMsg "--refresh option was rejected, falling back to installation without --refresh..."
                     $fallbackSucceeded = $false
                     try {
-                        $fallbackOutput = & claude @("mcp","add","ccg","--scope","user","--transport","stdio","--","uvx","--from","git+https://github.com/FredericMN/Coder-Codex-Gemini.git","ccg-mcp") 2>&1
+                        $fallbackOutput = & claude @("mcp","add","ccg","--scope","user","--transport","stdio","--","uvx","--from","git+https://github.com/szstan/Coder-Codex-Gemini.git","ccg-mcp") 2>&1
                         if ($LASTEXITCODE -eq 0) {
                             $fallbackSucceeded = $true
                         }
@@ -288,7 +288,7 @@ if ($DryRun) {
 
             $fallbackSucceeded = $false
             try {
-                $fallbackOutput = & claude @("mcp","add","ccg","--scope","user","--transport","stdio","--","uvx","--from","git+https://github.com/FredericMN/Coder-Codex-Gemini.git","ccg-mcp") 2>&1
+                $fallbackOutput = & claude @("mcp","add","ccg","--scope","user","--transport","stdio","--","uvx","--from","git+https://github.com/szstan/Coder-Codex-Gemini.git","ccg-mcp") 2>&1
                 if ($LASTEXITCODE -eq 0) {
                     $fallbackSucceeded = $true
                 }

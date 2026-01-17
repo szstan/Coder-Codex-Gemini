@@ -203,7 +203,7 @@ chmod +x setup.sh && ./setup.sh
 One-click scripts use remote installation by default. For manual installation:
 
 ```bash
-claude mcp add ccg -s user --transport stdio -- uvx --refresh --from git+https://github.com/FredericMN/Coder-Codex-Gemini.git ccg-mcp
+claude mcp add ccg -s user --transport stdio -- uvx --refresh --from git+https://github.com/szstan/Coder-Codex-Gemini.git ccg-mcp
 ```
 
 #### Local Installation (Development Only)
