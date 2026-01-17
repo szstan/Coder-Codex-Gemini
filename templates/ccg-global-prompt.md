@@ -84,12 +84,22 @@ CCG 提供完整的 AI 治理框架，确保代码质量和工作流规范。
 - 参考 `CONTRACT_QUICKSTART.md` 快速入门
 - 当前任务合约保存在 `ai/contracts/current.md`
 
+**Contract 质量标准**：`ai/contract_quality_standards.md`
+- 定义 Contract 的必需要素（Scope、Must-change、Must-not-change、Constraints、Testing strategy）
+- Contract 质量标准（清晰性、完整性、可验证性）
+- Contract 验收检查清单和案例
+
 ### 质量保障体系
 
 **Coder 质量指南**：`ai/coder_quality_guide.md`
 - 确保 Coder 输出符合质量标准
 - 包含代码规范和最佳实践
 - 引用完整的代码风格和设计规范体系
+
+**Claude 验收检查清单**：`ai/claude_review_checklist.md`
+- 定义 Claude 快速验收标准（Contract 符合性、代码风格、代码质量、测试完整性）
+- 5-10 分钟快速检查流程
+- 验收结论模板和案例
 
 **代码风格规范**：`ai/code_style_guide.md`
 - 通用代码风格规范（适用于所有编程语言）
@@ -177,6 +187,20 @@ CCG 提供完整的 AI 治理框架，确保代码质量和工作流规范。
 - 完整的需求案例（用户认证、数据导出、Bug 修复、性能优化）
 - 需求文档质量标准和检查清单
 - 帮助用户编写清晰、可执行的需求文档
+
+**需求验收标准**：`ai/requirement_acceptance.md`
+- 定义需求文档的验收标准（必需要素、质量标准）
+- 需求验收检查清单（功能描述、使用场景、输入输出、验收标准）
+- 三关验收流程（自动化检查 → Claude 审查 → 用户确认）
+- 需求验收案例（通过/需要补充/不通过）
+
+### 自动化检查集成
+
+**自动化检查集成指南**：`ai/automation_integration.md`
+- 定义自动化检查工具的集成点（Coder 执行后、Claude 验收后、Codex 审核后）
+- 语言特定工具配置（Python: Black/Flake8, Node.js: Prettier/ESLint, Java: Google Java Format/SpotBugs）
+- 自动化脚本和配置文件
+- 环境准备强制执行机制
 
 ## Gemini 触发场景
 

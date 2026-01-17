@@ -32,12 +32,14 @@ description: |
 
 **核心约束**：
 - `ai/contracts/current.md`（本次变更的 Implementation Contract）
+- `ai/contract_quality_standards.md`（Contract 质量标准和验收检查清单）
 - `ai/engineering_codex.md`（工程原则 / 默认判断）
 - `ai/implementer_guardrails.md`（实现边界）
 - `ai/codex_review_gate.md`（审核闸门）
 
 **质量标准**：
 - `ai/coder_quality_guide.md`（Coder 质量指南）
+- `ai/claude_review_checklist.md`（Claude 验收检查清单）
 - `ai/code_style_guide.md`（通用代码风格规范）
 - `ai/design_principles.md`（设计原则：SOLID、DRY、KISS、YAGNI）
 
@@ -60,6 +62,10 @@ description: |
 
 **需求文档编写**：
 - `ai/requirement_guide.md`（需求文档编写指南、模板和案例）
+- `ai/requirement_acceptance.md`（需求验收标准和检查清单）
+
+**自动化检查集成**：
+- `ai/automation_integration.md`（自动化检查工具集成指南）
 
 **项目上下文**（可选）：
 - `ai/PROJECT_CONTEXT.md`（项目特定上下文）
