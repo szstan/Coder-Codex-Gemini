@@ -362,18 +362,35 @@ if ($npmInstalled -and -not $DryRun) {
         Write-WarningMsg "Failed to register Ace MCP server, you can register it manually later"
     }
 
-    # Register Playwright MCP server (for testing)
+    # Register Playwright MCP server (for testing) - using config file method
     Write-Step "Registering Playwright MCP server for testing..."
-    $null = & claude @("mcp","remove","playwright","--scope","user") 2>&1
     try {
-        $null = & claude @("mcp","add","playwright","--scope","user","--transport","stdio","--","npx","-y","@executeautomation/playwright-mcp-server") 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            Write-Success "Playwright MCP server registered"
+        $mcpConfigPath = "$env:USERPROFILE\.claude\mcp.json"
+
+        # Read existing config or create new one
+        if (Test-Path $mcpConfigPath) {
+            $mcpConfig = Get-Content $mcpConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
         } else {
-            Write-WarningMsg "Failed to register Playwright MCP server, you can register it manually later"
+            $mcpConfig = @{ mcpServers = @{} } | ConvertTo-Json -Depth 10 | ConvertFrom-Json
         }
+
+        # Add or update Playwright MCP server
+        $playwrightConfig = @{
+            command = "cmd"
+            args = @("/c", "npx", "-y", "@executeautomation/playwright-mcp-server")
+            env = @{ SYSTEMROOT = "C:\Windows" }
+        }
+
+        $mcpConfig.mcpServers | Add-Member -NotePropertyName "playwright" -NotePropertyValue $playwrightConfig -Force
+
+        # Save config file (UTF-8 without BOM)
+        $jsonContent = $mcpConfig | ConvertTo-Json -Depth 10
+        [System.IO.File]::WriteAllText($mcpConfigPath, $jsonContent, [System.Text.UTF8Encoding]::new($false))
+
+        Write-Success "Playwright MCP server registered"
     } catch {
-        Write-WarningMsg "Failed to register Playwright MCP server, you can register it manually later"
+        Write-WarningMsg "Failed to register Playwright MCP server: $_"
+        Write-WarningMsg "You can register it manually later"
     }
 } elseif ($DryRun) {
     Write-DryRun "Would check for npm installation"
