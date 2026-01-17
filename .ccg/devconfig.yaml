@@ -1,0 +1,48 @@
+# CCG 项目开发配置
+# 定义测试命令、环境变量等项目特定配置
+# 此文件应该被 git 跟踪，团队成员共享
+
+# 项目信息
+project:
+  name: Coder-Codex-Gemini
+  type: python
+  description: 多模型协作 MCP 服务器
+
+# 测试配置
+test:
+  # 默认测试命令
+  command: pytest tests/ -v
+
+  # 测试环境变量
+  environment:
+    ENVIRONMENT: testing
+    PYTHONPATH: .
+
+  # 测试前置步骤（可选）
+  setup: []
+
+  # 测试后置步骤（可选）
+  teardown: []
+
+  # 不同类型的测试（可选）
+  variants:
+    unit: pytest tests/unit/ -v
+    integration: pytest tests/integration/ -v
+    all: pytest tests/ -v --cov
+
+# 常用命令
+commands:
+  # 构建
+  build: python -m build
+
+  # 代码检查
+  lint: ruff check .
+
+  # 代码格式化
+  format: ruff format .
+
+  # 安装开发依赖
+  install: pip install -e ".[dev]"
+
+  # 类型检查
+  typecheck: mypy src/

@@ -1,0 +1,59 @@
+# CCG 项目开发配置示例
+# 复制此文件为 devconfig.yaml 并根据你的项目修改
+
+# 项目信息
+project:
+  name: my-awesome-project
+  type: python  # python | nodejs | rust | go | java
+  description: 项目描述
+
+# 测试配置
+test:
+  # 默认测试命令
+  command: pytest tests/ -v
+
+  # 测试环境变量
+  environment:
+    ENVIRONMENT: testing
+    DATABASE_URL: postgresql://localhost/test_db
+    # API_KEY: test_key_123
+    # REDIS_URL: redis://localhost:6379
+
+  # 测试前置步骤（可选）
+  setup:
+    - docker-compose up -d test-db
+    - python scripts/setup_test_data.py
+
+  # 测试后置步骤（可选）
+  teardown:
+    - docker-compose down
+
+  # 不同类型的测试（可选）
+  variants:
+    unit: pytest tests/unit/ -v
+    integration: pytest tests/integration/ -v
+    e2e: pytest tests/e2e/ -v
+    all: pytest tests/ -v --cov
+
+# 常用命令
+commands:
+  # 构建
+  build: python -m build
+
+  # 代码检查
+  lint: ruff check .
+
+  # 代码格式化
+  format: ruff format .
+
+  # 安装依赖
+  install: pip install -e ".[dev]"
+
+  # 类型检查
+  typecheck: mypy src/
+
+  # 启动开发服务器
+  dev: uvicorn src.main:app --reload
+
+  # 数据库迁移
+  migrate: alembic upgrade head

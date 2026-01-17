@@ -32,11 +32,13 @@ tags: [checkpoint, config, state, session]
 
 ## 检查点执行流程
 
-### 步骤 1：读取状态文件（1 分钟）
-- 读取 `.ccg/state.json`
+### 步骤 1：读取配置和状态文件（1 分钟）
+- 读取 `.ccg/state.json`（运行时状态）
+- 读取 `.ccg/devconfig.yaml`（项目配置，如果存在）
 - 获取当前 SESSION_ID
 - 获取当前工作流阶段
 - 获取当前 Contract
+- 获取测试命令和环境配置
 
 ### 步骤 2：重申强制规则（2 分钟）
 ```markdown
@@ -76,6 +78,11 @@ tags: [checkpoint, config, state, session]
 - audit: 审核中
 
 **当前 Contract**：{从 state.json 读取}
+
+**项目配置**（从 devconfig.yaml）：
+- 测试命令: {test.command}
+- 测试环境: {test.environment}
+- 常用命令: {commands}
 ```
 
 ### 步骤 4：更新检查点计数（1 分钟）
@@ -104,7 +111,8 @@ tags: [checkpoint, config, state, session]
 ## 状态文件管理
 
 ### 状态文件位置
-`.ccg/state.json`
+- `.ccg/state.json` - 运行时状态（git 忽略）
+- `.ccg/devconfig.yaml` - 项目配置（git 跟踪）
 
 ### 状态字段说明
 ```json
@@ -120,7 +128,8 @@ tags: [checkpoint, config, state, session]
   "workflow_stage": "implementation",  // 工作流阶段
   "mandatory_rules": [...],            // 强制规则列表
   "checkpoint_counter": 5,             // 检查点计数
-  "last_checkpoint": "2026-01-17T..."  // 最后检查点时间
+  "last_checkpoint": "2026-01-17T...", // 最后检查点时间
+  "config_file": ".ccg/devconfig.yaml" // 项目配置文件路径
 }
 ```
 
@@ -136,7 +145,9 @@ cat .ccg/state.json
 
 ## 相关文档
 
-- 状态文件：`.ccg/state.json`
+- 运行时状态：`.ccg/state.json`
+- 项目配置：`.ccg/devconfig.yaml`
+- 配置示例：`.ccg/devconfig.example.yaml`
 - 全局配置：`~/.claude/CLAUDE.md`
 - 项目配置：`./CLAUDE.md`
 - CCG 工作流：`/ccg-workflow` Skill

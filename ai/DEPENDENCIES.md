@@ -179,11 +179,12 @@ npm install -g acemcp-node
 
 **使用的工具**：
 - ✅ `/ccg:checkpoint` Skill - 定期重申核心配置和状态
-- ✅ `.ccg/state.json` - 状态文件持久化
+- ✅ `.ccg/state.json` - 运行时状态持久化（git 忽略）
+- ✅ `.ccg/devconfig.yaml` - 项目配置文件（git 跟踪）
 
 **状态文件位置**：`.ccg/state.json`
 
-**状态文件内容**：
+**状态文件内容**（`.ccg/state.json`）：
 ```json
 {
   "version": "1.0",
@@ -201,8 +202,29 @@ npm install -g acemcp-node
     "必须保存和复用 SESSION_ID"
   ],
   "checkpoint_counter": 0,
-  "last_checkpoint": ""
+  "last_checkpoint": "",
+  "config_file": ".ccg/devconfig.yaml"
 }
+```
+
+**项目配置文件**（`.ccg/devconfig.yaml`）：
+```yaml
+# 项目信息
+project:
+  name: my-project
+  type: python
+
+# 测试配置
+test:
+  command: pytest tests/ -v
+  environment:
+    ENVIRONMENT: testing
+    DATABASE_URL: postgresql://localhost/test_db
+
+# 常用命令
+commands:
+  build: python -m build
+  lint: ruff check .
 ```
 
 **检查点触发时机**：
@@ -212,7 +234,9 @@ npm install -g acemcp-node
 
 **文档参考**：
 - `skills/ccg-checkpoint/skill.md` - 检查点 Skill 说明
-- `.ccg/state.json` - 状态文件模板
+- `.ccg/state.json` - 运行时状态文件
+- `.ccg/devconfig.yaml` - 项目配置文件
+- `.ccg/devconfig.example.yaml` - 配置示例文件
 
 ## 初始化检查清单
 
