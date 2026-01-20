@@ -48,6 +48,8 @@ reference/
 
 # CCG runtime state and sessions (keep config files)
 .ccg/state.json
+.ccg/progress.json
+.ccg/progress-improved.json
 .ccg/sessions/current.json
 .ccg/sessions/history/
 
