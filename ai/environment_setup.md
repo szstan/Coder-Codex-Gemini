@@ -174,7 +174,26 @@ python -c "import os; print(os.getenv('DATABASE_URL'))"
 node -e "console.log(process.env.DATABASE_URL)"
 ```
 
-### 3.2 数据库配置
+### 3.2 中间件配置
+
+**配置管理**：
+
+CCG 项目推荐使用分层配置管理中间件（数据库、缓存、消息队列等）。
+
+**详细指南**：参见 [中间件配置管理指南](../docs/MIDDLEWARE_CONFIG_GUIDE.md)
+
+**快速配置**：
+```bash
+# 1. 复制配置模板
+cp templates/.env.example .env
+cp templates/config/development.yml config/development.yml
+
+# 2. 编辑 .env 填写实际值
+# 3. 启动中间件（使用 Docker）
+docker-compose up -d
+```
+
+### 3.3 数据库配置
 
 **PostgreSQL 示例**：
 ```bash

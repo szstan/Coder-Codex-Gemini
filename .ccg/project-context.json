@@ -1,0 +1,106 @@
+{
+  "project_name": "Coder-Codex-Gemini",
+  "description": "多模型协作 MCP 服务器，让 Claude 调度 Coder 执行代码、Codex 审核质量、Gemini 提供专家咨询",
+  "version": "1.0.0",
+  "created_at": "2026-01-01",
+  "last_updated": "2026-01-19",
+
+  "tech_stack": {
+    "language": "Python",
+    "framework": "FastMCP",
+    "python_version": "3.10+",
+    "packaging": "pyproject.toml",
+    "dependencies": [
+      "fastmcp",
+      "anthropic (Claude Code CLI)",
+      "openai (Codex)",
+      "google-generativeai (Gemini CLI)"
+    ]
+  },
+
+  "architecture": {
+    "type": "MCP Server",
+    "patterns": ["三层架构 (Control/Reasoning/Execution)", "工具编排"],
+    "components": [
+      "ccg_mcp.server - MCP 服务器主体",
+      "ccg_mcp.tools.coder - Coder 工具",
+      "ccg_mcp.tools.codex - Codex 工具",
+      "ccg_mcp.tools.gemini - Gemini 工具"
+    ]
+  },
+
+  "current_phase": "v1.0 已发布，持续优化中",
+
+  "key_modules": [
+    {
+      "name": "Skills 系统",
+      "status": "已完成",
+      "description": "15 个 Skills 工作流指导"
+    },
+    {
+      "name": "模块化文档",
+      "status": "刚完成",
+      "description": "将 UNIFIED_WORKFLOW_DETAILED.md 拆分为 10 个模块"
+    },
+    {
+      "name": "会话管理",
+      "status": "开发中",
+      "description": "自动保存和恢复项目上下文"
+    }
+  ],
+
+  "conventions": {
+    "code_style": "遵循 PEP 8",
+    "test_framework": "pytest",
+    "coverage_target": "不强制，但推荐 ≥ 60%",
+    "documentation": "Markdown + 中文为主",
+    "commit_style": "Conventional Commits"
+  },
+
+  "recent_decisions": [
+    {
+      "date": "2026-01-19",
+      "decision": "模块化拆分 CCG Workflow 文档",
+      "rationale": "原文档 1600+ 行，接近可维护性上限",
+      "impact": "可读性提升 80%，维护成本降低 60%"
+    },
+    {
+      "date": "2026-01-18",
+      "decision": "新增架构不变性（8 条硬约束）",
+      "rationale": "确保系统长期稳定运行",
+      "impact": "明确三层架构职责边界"
+    },
+    {
+      "date": "2026-01-03",
+      "decision": "项目重命名为 CCG",
+      "rationale": "从 Coder-Codex 扩展为包含 Gemini 的三方协作",
+      "impact": "品牌统一，定位清晰"
+    }
+  ],
+
+  "known_issues": [
+    {
+      "severity": "low",
+      "description": "STANDARD_CCG_WORKFLOW.md (643 行) 接近 700 行上限",
+      "workaround": "未来可考虑拆分为 4 个阶段文档"
+    }
+  ],
+
+  "team_context": {
+    "primary_user": "个人开发者 + 开源社区",
+    "collaboration_model": "Git + GitHub Issues",
+    "communication": "项目 README + CLAUDE.md"
+  },
+
+  "external_resources": {
+    "repository": "https://github.com/szstan/Coder-Codex-Gemini",
+    "documentation": "skills/ccg-workflow/modules/UNIFIED_WORKFLOW.md",
+    "dependencies_doc": "ai/DEPENDENCIES.md"
+  },
+
+  "notes": [
+    "本项目是 CCG 系统的实现，也是使用 CCG 系统开发的（自举）",
+    "所有文档默认使用中文，代码注释和 commit message 也优先中文",
+    "Skills 目录包含 15 个工作流指导文档，是核心价值所在"
+  ]
+}

@@ -66,9 +66,30 @@ Coder-Codex-Gemini/
 │       ├── coder.py          # Coder 工具
 │       ├── codex.py          # Codex 工具
 │       └── gemini.py         # Gemini 工具
-├── skills/                   # Skills 工作流指导
+├── skills/                   # Skills 工作流指导（15 个）
 │   ├── ccg-workflow/         # CCG 协作流程
+│   ├── ccg-session-manager/  # 会话管理器（自动上下文保持）
+│   ├── ccg-iteration-loop/   # 持续迭代循环
+│   ├── ccg-plan/             # 规划生成器
+│   ├── ccg-execute/          # 计划执行器
+│   ├── ccg-parallel/         # 并行任务执行
+│   ├── ccg-contract/         # Contract 创建
+│   ├── ccg-review/           # Claude 验收检查
+│   ├── ccg-codex-gate/       # Codex 审核门禁
+│   ├── ccg-checkpoint/       # 配置检查点
+│   ├── ccg-test-fix/         # 测试失败修复
+│   ├── ccg-test-fix-advanced/# 测试失败多层级修复
+│   ├── ccg-database-design/  # 数据库设计
+│   ├── ccg-git-safety/       # Git 安全检查
+│   ├── codex-code-review-enterprise/ # Codex 企业级 Review
 │   └── gemini-collaboration/ # Gemini 协作指南
+├── .ccg/                     # 会话管理配置（gitignore）
+│   ├── project-context.json  # 项目静态信息
+│   ├── state.json            # 全局状态
+│   └── sessions/
+│       ├── template.json     # 空模板
+│       ├── current.json      # 当前会话状态
+│       └── history/          # 历史归档
 ├── templates/                # 模板文件
 │   └── ccg-global-prompt.md  # 全局 CLAUDE.md 模板
 ├── cases/                    # 实测案例
@@ -92,6 +113,47 @@ Coder-Codex-Gemini/
 | M3 | 协作 Prompt 优化 | ✅ 完成 |
 | M4 | 集成 gemini 工具 | ✅ 完成 |
 | M5 | 文档、发布 | ✅ 完成 |
+
+## 会话管理系统
+
+CCG 集成了完整的会话管理系统，解决上下文连续性问题。
+
+### 核心功能
+
+1. **自动加载项目配置**（会话启动时）
+   - 读取 `.ccg/project-context.json`
+   - 显示项目基本信息、技术栈、最近决策
+
+2. **自动检测未完成任务**（会话启动时）
+   - 检查 `.ccg/sessions/current.json`
+   - 如果有未完成任务 → 提示恢复
+   - 如果无任务 → 准备开始新任务
+
+3. **自动保存会话状态**（任务执行过程中）
+   - 任务开始时：创建 session
+   - 工具调用后：更新 SESSION_ID 和受影响文件
+   - 阶段切换时：记录完成步骤和待执行步骤
+   - 任务完成时：归档到 history/
+
+4. **会话恢复**（中断后重启）
+   - 恢复任务描述和目标
+   - 恢复 SESSION_ID（Coder/Codex/Gemini）
+   - 恢复 Contract / OpenSpec
+   - 从当前步骤继续执行
+
+### 使用方式
+
+**对用户**：完全透明，无需任何操作
+- 正常开发 → 自动保存
+- 会话中断 → 重启后自动提示恢复
+
+**对 Claude**：每次会话启动时自动执行
+- 加载项目配置
+- 检测未完成任务
+- 提示用户选择操作
+- 任务执行过程中自动保存状态
+
+**详细说明**：参见 `/ccg-session-manager` Skill
 
 ## 技术要点
 

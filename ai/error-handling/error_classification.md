@@ -13,6 +13,7 @@
 **错误类型**：
 - `network_timeout` - 网络超时
 - `api_rate_limit` - API 限流
+- `api_quota_exceeded` - API 额度不足
 - `resource_busy` - 资源繁忙
 - `temporary_unavailable` - 服务临时不可用
 - `connection_reset` - 连接重置
@@ -89,13 +90,14 @@
 **错误类型**：
 - `auth_failure` - 认证失败
 - `resource_not_found` - 资源不存在
-- `quota_exceeded` - 配额超限
 - `invalid_request` - 无效请求
 - `upstream_error` - 上游服务错误
 
 **处理策略**：
 - ❌ 不重试
 - ✅ 立即停止并报告
+
+**注意**：`api_quota_exceeded` 已移至"临时性错误"，因为 CCG 有自动降级方案。
 - ✅ 提供详细错误信息和建议
 
 **示例**：

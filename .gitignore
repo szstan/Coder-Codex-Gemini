@@ -44,11 +44,12 @@ desktop.ini
 ehthumbs.db
 
 # Project specific
-docs/
 reference/
 
-# CCG runtime state (only exclude state.json, keep config files)
+# CCG runtime state and sessions (keep config files)
 .ccg/state.json
+.ccg/sessions/current.json
+.ccg/sessions/history/
 
 # Secrets
 config.toml

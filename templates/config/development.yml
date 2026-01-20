@@ -1,0 +1,33 @@
+# 开发环境配置
+# 使用环境变量占位符
+
+database:
+  host: ${DB_HOST}
+  port: ${DB_PORT}
+  name: ${DB_NAME}
+  user: ${DB_USER}
+  password: ${DB_PASSWORD}
+  pool_size: 10
+  timeout: 5000
+  log_queries: true
+
+redis:
+  host: ${REDIS_HOST}
+  port: ${REDIS_PORT}
+  password: ${REDIS_PASSWORD}
+  db: ${REDIS_DB}
+  max_connections: 50
+  timeout: 3000
+
+rabbitmq:
+  host: ${RABBITMQ_HOST}
+  port: ${RABBITMQ_PORT}
+  user: ${RABBITMQ_USER}
+  password: ${RABBITMQ_PASSWORD}
+  vhost: /
+  heartbeat: 60
+
+logging:
+  level: debug
+  format: json
+  output: stdout

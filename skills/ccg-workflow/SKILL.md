@@ -24,6 +24,51 @@ description: |
 
 ---
 
+## 会话管理（自动上下文保持）
+
+CCG 系统集成了自动会话管理功能，解决上下文连续性问题。
+
+### 核心功能
+
+1. **自动加载项目配置**（会话启动时）
+   - 读取 `.ccg/project-context.json`
+   - 显示项目基本信息、技术栈、最近决策
+
+2. **自动检测未完成任务**（会话启动时）
+   - 检查 `.ccg/sessions/current.json`
+   - 如果有未完成任务 → 提示恢复
+   - 如果无任务 → 准备开始新任务
+
+3. **自动保存会话状态**（任务执行过程中）
+   - 任务开始时：创建 session
+   - 工具调用后：更新 SESSION_ID 和受影响文件
+   - 阶段切换时：记录完成步骤和待执行步骤
+   - 任务完成时：归档到 history/
+
+4. **会话恢复**（中断后重启）
+   - 恢复任务描述和目标
+   - 恢复 SESSION_ID（Coder/Codex/Gemini）
+   - 恢复 Contract / OpenSpec
+   - 从当前步骤继续执行
+
+### 使用方式
+
+**对用户**：完全透明，无需任何操作
+- 正常开发 → 自动保存
+- 会话中断 → 重启后自动提示恢复
+
+**对 Claude**：每次会话启动时自动执行
+```
+1. 加载 .ccg/project-context.json
+2. 检测 .ccg/sessions/current.json
+3. 如有未完成任务 → 提示用户选择操作
+4. 任务执行过程中自动保存状态
+```
+
+**详细说明**：参见 `/ccg-session-manager` Skill
+
+---
+
 ## 外部工程约束（可选，但强烈推荐）
 
 某些项目会提供外部的工程约束与事实源（例如项目内 `ai/` 目录），用于保证执行与审核的一致性。
@@ -53,6 +98,10 @@ description: |
 - `ai/failure_path_testing.md`（Failure path 测试指南）
 - `ai/test_acceptance_criteria.md`（测试验收标准）
 
+**E2E 测试（Playwright）**：
+- `docs/PLAYWRIGHT_GUIDE.md`（Playwright MCP Server 使用指南）
+- `/ccg-e2e-test` Skill（E2E 测试生成流程）
+
 **Git 工作流**：
 - `ai/git_workflow.md`（Git 提交和推送规范、分支策略、与 CCG 集成）
 
@@ -72,6 +121,33 @@ description: |
 
 > 约束不要求 workflow 自动读取路径。
 > **由 Claude 在每次调用时显式把内容注入 Prompt**。
+
+---
+
+## API 错误容错策略
+
+当 Coder/Codex/Gemini 调用失败时（额度不足、服务不可用、认证失败等），**不阻塞任务执行**，自动降级处理。
+
+### 降级方案
+
+| AI 角色 | 错误场景 | 降级方案 | 是否阻塞 |
+|---------|---------|---------|---------|
+| **Coder** | 额度不足/服务不可用 | Claude 亲自执行（使用 Read/Write/Edit 工具） | 否 |
+| **Codex** | 额度不足/服务不可用 | Claude 深度审核（参考 ai/codex_review_gate.md） | 否 |
+| **Gemini** | 额度不足/服务不可用 | 跳过或 Claude 自行决策 | 否 |
+
+### 处理流程
+
+```
+1. 检测 AI 调用错误
+2. 识别错误类型（额度/认证/服务）
+3. 提示用户："[AI] 当前不可用，我将[降级方案]"
+4. 执行降级方案
+5. 记录错误到 .ccg/errors.log
+6. 继续后续流程
+```
+
+**详细说明**：参见 `ai/api_quota_handling.md`
 
 ---
 
@@ -274,16 +350,63 @@ Coder 执行完毕后，Claude 快速验收：
 
 ### 3. 审核：Codex 阶段性 Review
 
-阶段性开发完成后，调用 Codex review：
+阶段性开发完成后，调用 Codex review。Codex 提供两种审核模式：
 
+#### 3.1 标准审核模式（日常开发）
+
+**适用场景**：日常开发迭代、快速反馈
+
+**审核范围**：当前改动的业务代码
+
+**测试代码策略**：
+- ✅ **需要审核**：复杂测试逻辑、集成测试、测试工具类、性能/安全测试
+- ❌ **可豁免**：简单单元测试（仅验证输入输出）、自动生成的测试、纯数据 Mock
+
+**工具**：直接调用 `mcp__ccg__codex`
+
+**审核要点**：
 * 检查代码质量、潜在 Bug
 * 给出明确结论：✅ 通过 / ⚠️ 优化 / ❌ 修改
 
 当存在工程约束时：
-
 * Codex 输入必须包含 Contract / Review Gate / Assumptions
 * Blocking 问题应尽量引用相关条款
 * 不应引入 Contract 之外的新需求
+
+#### 3.2 企业级审核模式（PR 合入前）
+
+**适用场景**：准备合入主分支前的最终质量把关
+
+**审核范围**：完整 Git diff（包括所有测试代码）
+
+**审核标准**：8 条 Blocking 规则
+1. 架构边界被破坏
+2. 业务逻辑直接读取环境变量/硬编码配置
+3. 吞异常（silent swallow）
+4. 关键错误信息缺少定位上下文
+5. 新增/修改关键逻辑缺少 failure path 测试
+6. 可观测性缺失（日志、指标、追踪）
+7. 演进安全性问题（破坏向后兼容）
+8. 可维护性严重问题（过度复杂、缺少文档）
+
+**工具**：使用 `/codex-code-review-enterprise` Skill
+
+**输出格式**：结构化（Blocking / Non-blocking / Nit），最多 10 个问题
+
+**优先级**：演进安全 → 可观测性 → 可测试性 → 可读性
+
+**测试代码策略**：所有测试代码都需要审核
+
+#### 模式选择指南
+
+| 维度 | 标准审核 | 企业级审核 |
+|------|---------|-----------|
+| **使用场景** | 日常开发迭代 | PR 合入前 |
+| **审核范围** | 当前改动 | 完整 Git diff |
+| **测试代码** | 简单测试可豁免 | 全部审核 |
+| **审核深度** | 快速反馈 | 严格把关 |
+| **Blocking 规则** | 灵活 | 8 条硬性规则 |
+| **输出格式** | 自由 | 结构化 |
 
 ---
 
@@ -385,5 +508,25 @@ or performance decision without scale assumptions).
 
 > Contract（ai/contracts/current.md）是权威事实源，
 > Context Pack 仅用于运行时注入，不作为持久文档保存。
+
+---
+
+## 详细流程文档（模块化）
+
+本 Skill 提供核心流程概览。完整的流程细节、检查清单和最佳实践请参考：
+
+**主入口**：
+- **[modules/UNIFIED_WORKFLOW.md](./modules/UNIFIED_WORKFLOW.md)** - 模块化文档导航入口
+
+**核心模块**：
+- **[modules/OVERVIEW.md](./modules/OVERVIEW.md)** - 系统总览（三层架构 + 架构不变性）
+- **[modules/ROUTING.md](./modules/ROUTING.md)** - 智能路由详解（路由决策 + 反馈循环）
+- **[modules/OPENSPEC_WORKFLOW.md](./modules/OPENSPEC_WORKFLOW.md)** - OpenSpec 流程深度详解
+- **[modules/STANDARD_CCG_WORKFLOW.md](./modules/STANDARD_CCG_WORKFLOW.md)** - 标准 CCG 流程深度详解
+- **[modules/QUICK_CCG_WORKFLOW.md](./modules/QUICK_CCG_WORKFLOW.md)** - 快速 CCG 流程深度详解
+- **[modules/ACEMCP_INTEGRATION.md](./modules/ACEMCP_INTEGRATION.md)** - Acemcp 接入规范
+- **[modules/CONTRACT_GUIDE.md](./modules/CONTRACT_GUIDE.md)** - Contract 创建指南
+- **[modules/INVARIANT_CHECKS.md](./modules/INVARIANT_CHECKS.md)** - 不变性自动检查
+- **[modules/BEST_PRACTICES.md](./modules/BEST_PRACTICES.md)** - 最佳实践和反模式
 
 

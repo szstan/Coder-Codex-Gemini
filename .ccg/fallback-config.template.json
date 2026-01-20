@@ -1,0 +1,91 @@
+# CCG 降级策略配置
+
+> **文件位置**: `.ccg/fallback-config.json`
+> **用途**: 定义 AI 不可用时的降级策略
+
+---
+
+## 配置结构
+
+```json
+{
+  "version": "1.0.0",
+  "last_updated": "2026-01-20T16:00:00Z",
+  "fallback_strategies": {
+    "coder": {
+      "enabled": true,
+      "strategy": "claude_execute",
+      "description": "Coder 不可用时，Claude 亲自执行代码任务"
+    },
+    "codex": {
+      "enabled": true,
+      "strategy": "claude_review",
+      "description": "Codex 不可用时，Claude 进行深度审核"
+    },
+    "gemini": {
+      "enabled": true,
+      "strategy": "skip_or_claude_decide",
+      "description": "Gemini 不可用时，跳过或 Claude 自行决策"
+    }
+  },
+  "error_logging": {
+    "enabled": true,
+    "log_file": ".ccg/errors.log",
+    "max_entries": 1000
+  }
+}
+```
+
+---
+
+## 配置说明
+
+### fallback_strategies
+
+定义每个 AI 的降级策略。
+
+| 字段 | 说明 |
+|------|------|
+| `enabled` | 是否启用降级（true/false） |
+| `strategy` | 降级策略名称 |
+| `description` | 策略描述 |
+
+### 可用策略
+
+| AI | 策略名称 | 说明 |
+|----|---------|------|
+| coder | `claude_execute` | Claude 使用 Read/Write/Edit 工具执行 |
+| codex | `claude_review` | Claude 参考审核标准进行审核 |
+| gemini | `skip_or_claude_decide` | 跳过或 Claude 决策 |
+
+---
+
+## 使用方式
+
+### 1. 创建配置文件
+
+```bash
+cp .ccg/fallback-config.template.json .ccg/fallback-config.json
+```
+
+### 2. 自动应用
+
+Claude 会自动读取此配置并应用降级策略。
+
+### 3. 禁用降级
+
+如果不希望自动降级，可以设置 `enabled: false`：
+
+```json
+{
+  "coder": {
+    "enabled": false
+  }
+}
+```
+
+此时 Coder 不可用会直接报错，不会降级。
+
+---
+
+**参考文档**: `ai/api_quota_handling.md`

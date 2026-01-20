@@ -14,6 +14,192 @@
 - **必须会话复用**：必须保存接收到的 `SESSION_ID` ，并始终在请求参数中携带 `SESSION_ID` 保持上下文
 - **SESSION_ID 管理规范**：各角色（Coder/Codex/Gemini）的 SESSION_ID 相互独立，必须使用 MCP 工具响应返回的实际 SESSION_ID 值，严禁自创 ID 或混用不同角色的 ID
 
+## 🔄 会话启动自动化（强制执行）
+
+**每次 Claude 会话启动时，必须自动执行以下步骤：**
+
+### 步骤 1：加载项目上下文
+
+```markdown
+1. 读取 `.ccg/project-context.json`
+2. 显示项目基本信息：
+   - 项目名称和描述
+   - 技术栈
+   - 当前阶段
+   - 最近决策（最多 3 条）
+   - 关键模块状态
+```
+
+**输出格式**：
+```
+📋 **项目上下文已加载**
+
+**项目**：[项目名称]
+**技术栈**：[主要技术]
+**阶段**：[当前阶段]
+
+**最近决策**：
+- [日期]：[决策内容]
+- [日期]：[决策内容]
+
+**关键模块**：
+- [模块名]（[状态]）
+```
+
+### 步骤 2：检测未完成任务
+
+```markdown
+1. 读取 `.ccg/sessions/current.json`
+2. 检查 status 字段：
+   - 如果 status == "idle" 或文件不存在 → 准备开始新任务
+   - 如果 status == "in_progress" → 提示恢复会话
+```
+
+**恢复提示格式**：
+```
+⚠️ **检测到未完成任务**
+
+**任务**：[任务描述]
+**状态**：[当前阶段]
+**进度**：
+  ✅ 已完成：[步骤列表]
+  🔄 进行中：[当前步骤]
+  ⏳ 待执行：[待执行步骤]
+
+**上次更新**：[时间]（[距离现在]）
+
+**SESSION_ID 状态**：
+  - Coder: [session_id 或 "未初始化"]
+  - Codex: [session_id 或 "未初始化"]
+  - Gemini: [session_id 或 "未初始化"]
+
+**操作选项**：
+1. ✅ 继续此任务（推荐）
+2. 💾 保存并开始新任务
+3. ❌ 放弃此任务并清空会话
+```
+
+### 步骤 3：等待用户决策
+
+- 如果有未完成任务 → 等待用户选择操作（1/2/3）
+- 如果无任务 → 直接进入正常工作流
+
+### 故障容错
+
+- 如果 `project-context.json` 不存在 → 提示："项目配置文件不存在，建议创建 `.ccg/project-context.json`"
+- 如果 `current.json` 损坏 → 自动重置为 `template.json`，提示："会话文件已重置"
+- 如果读取失败 → 跳过加载，继续正常工作流
+
+## 💾 任务执行自动保存（强制执行）
+
+**在任务执行过程中，必须在以下时机自动保存会话状态：**
+
+### 保存时机 1：任务开始时
+
+```markdown
+用户提出新任务时：
+1. 生成 session_id（格式：session-YYYY-MMDD-HHmmss）
+2. 更新 `.ccg/sessions/current.json`：
+   - session_id = 新生成的 ID
+   - session_started = 当前时间
+   - status = "in_progress"
+   - current_task.description = 任务描述
+   - current_task.type = [feature/bugfix/refactor/docs]
+   - current_task.phase = "preparation"
+```
+
+### 保存时机 2：工具调用完成后
+
+```markdown
+Coder/Codex/Gemini 执行完成后：
+1. 提取返回的 SESSION_ID
+2. 更新 `.ccg/sessions/current.json`：
+   - tool_sessions.{tool}.session_id = 返回的 SESSION_ID
+   - tool_sessions.{tool}.last_called = 当前时间
+   - tool_sessions.{tool}.call_count += 1
+   - last_updated = 当前时间
+3. 如果有文件变更：
+   - 更新 task_context.affected_files（追加新文件）
+```
+
+**示例**：
+```json
+{
+  "tool_sessions": {
+    "coder": {
+      "session_id": "coder-abc123",
+      "last_called": "2026-01-20T10:30:00Z",
+      "call_count": 2
+    }
+  },
+  "task_context": {
+    "affected_files": ["src/auth.py", "tests/test_auth.py"]
+  }
+}
+```
+
+### 保存时机 3：阶段切换时
+
+```markdown
+任务阶段变更时（preparation → execution → review → delivery）：
+1. 更新 `.ccg/sessions/current.json`：
+   - current_task.phase = 新阶段
+   - execution_state.current_step = 当前步骤描述
+   - execution_state.completed_steps += [刚完成的步骤]
+   - execution_state.pending_steps = [剩余步骤列表]
+   - last_updated = 当前时间
+```
+
+### 保存时机 4：质量信号更新时
+
+```markdown
+测试或审核完成后：
+1. 更新 `.ccg/sessions/current.json`：
+   - quality_signals.tests_passed = true/false
+   - quality_signals.codex_review_status = "passed"/"needs_fix"/"blocked"
+   - quality_signals.gate_passed = true/false
+   - last_updated = 当前时间
+```
+
+### 自动保存原则
+
+- **最小侵入**：保存操作不影响正常工作流
+- **静默执行**：保存成功无需提示用户
+- **失败容错**：保存失败不阻塞任务执行，记录警告即可
+- **增量更新**：只更新变化的字段，保留其他数据
+
+## 📦 任务完成自动归档（强制执行）
+
+**任务完成或放弃时，必须执行归档操作：**
+
+### 归档时机
+
+- Codex 审核通过 + 测试通过 → 任务完成
+- 用户明确放弃任务 → 任务取消
+- 用户选择"保存并开始新任务" → 当前任务暂停
+
+### 归档步骤
+
+```markdown
+1. 读取 `.ccg/sessions/current.json`
+2. 生成归档文件名：
+   - 格式：YYYY-MM-DD-{task-id}.json
+   - 示例：2026-01-20-task-001.json
+3. 复制 current.json → `.ccg/sessions/history/{filename}`
+4. 在归档文件中添加完成信息：
+   - completion_time = 当前时间
+   - final_status = "completed"/"cancelled"/"paused"
+   - final_notes = [可选的完成说明]
+5. 重置 current.json = template.json 的内容
+6. 提示用户："任务已归档到 .ccg/sessions/history/{filename}"
+```
+
+### 归档清理策略
+
+- 自动清理 30 天前的历史文件
+- 保留最近 100 个任务记录
+- 清理时提示："已清理 {N} 个旧会话记录"
+
 ## ⚠️ Skill 阅读前置条件（强制）
 
 **在调用任何 CCG MCP 工具之前，必须先执行对应的 Skill 获取最佳实践指导：**
@@ -23,8 +209,10 @@
 | `mcp__ccg__coder` | `/ccg-workflow` | 必须先执行 |
 | `mcp__ccg__codex` | `/ccg-workflow` | 必须先执行 |
 | `mcp__ccg__gemini` | `/gemini-collaboration` | 必须先执行 |
+| 会话管理 | `/ccg-session-manager` | 会话启动时自动执行 |
 | 数据库设计 | `/ccg-database-design` | 涉及数据结构变更时强制执行 |
 | Git 安全检查 | `/ccg-git-safety` | 改动代码前强制执行 |
+| 持续迭代循环 | `/ccg-iteration-loop` | 需要自动化执行多任务时 |
 | 编写计划 | `/ccg-plan` | 复杂任务前执行 |
 | 执行计划 | `/ccg-execute` | 执行实施计划 |
 | 并行任务 | `/ccg-parallel` | 多任务并行执行 |
@@ -34,6 +222,9 @@
 | 配置检查点 | `/ccg-checkpoint` | 定期自动执行 |
 | 测试失败修复 | `/ccg-test-fix` 或 `/ccg-test-fix-advanced` | 按需执行 |
 | Codex 企业级 Review | `/codex-code-review-enterprise` | 按需执行 |
+| 项目进度管理 | `/ccg-progress` | 查看进度/更新任务时执行 |
+| 项目接手分析 | `/ccg-project-handover` | 中途接手项目时执行 |
+| E2E 测试生成 | `/ccg-e2e-test` | 生成 Playwright E2E 测试时执行 |
 
 **执行流程**：
 1. 用户请求使用 Coder/Codex/Gemini
@@ -84,6 +275,55 @@
 2. 搜索受影响的符号/入口点
 3. 列出需要修改的文件清单
 4. 复杂问题可先与 Codex 或 Gemini 沟通方案
+
+## Codex 优先调用场景
+
+**何时先调用 Codex（而非直接调用 Coder）：**
+
+### 场景 1：复杂问题分析
+- 不确定技术方案，需要架构建议
+- 涉及多个模块的复杂重构
+- 性能优化、安全加固等需要深度分析的任务
+
+**流程**：Codex 分析 → Claude 决策 → Coder 执行
+
+### 场景 2：代码审核
+
+#### 标准审核模式（日常开发）
+- **触发时机**：阶段性开发完成后
+- **审核范围**：当前改动的业务代码
+- **测试代码**：简单单元测试可豁免，复杂测试需审核
+- **工具**：直接调用 `mcp__ccg__codex`
+
+#### 企业级审核模式（PR 合入前）
+- **触发时机**：准备合入主分支前
+- **审核范围**：完整 Git diff（包括所有测试代码）
+- **审核标准**：8 条 Blocking 规则（演进安全、可观测性、可测试性、可维护性）
+- **工具**：使用 `/codex-code-review-enterprise` Skill
+- **输出格式**：Blocking / Non-blocking / Nit（最多 10 个问题）
+
+**企业级审核 vs 标准审核对比**：
+
+| 维度 | 标准审核 | 企业级审核 |
+|------|---------|-----------|
+| **使用场景** | 日常开发迭代 | PR 合入前 |
+| **审核范围** | 当前改动 | 完整 Git diff |
+| **测试代码** | 简单测试可豁免 | 全部审核 |
+| **审核深度** | 快速反馈 | 严格把关 |
+| **Blocking 规则** | 灵活 | 8 条硬性规则 |
+| **输出格式** | 自由 | 结构化（Blocking/Non-blocking/Nit）|
+
+**测试代码审核策略**：
+- ✅ **需要审核**：复杂测试逻辑、集成测试、测试工具类、性能/安全测试
+- ❌ **可豁免**：简单单元测试（仅验证输入输出）、自动生成的测试、纯数据 Mock
+- ⚠️ **PR 合入前**：所有测试代码都需要企业级审核
+
+### 场景 3：架构设计咨询
+- 数据库设计（配合 `/ccg-database-design`）
+- API 设计
+- 系统架构设计
+
+**流程**：Codex 提供方案 → 用户/Claude 决策 → Coder 执行
 
 ## Codex + Gemini 双顾问协作模式
 
