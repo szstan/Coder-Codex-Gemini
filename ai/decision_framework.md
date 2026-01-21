@@ -6,6 +6,30 @@
 
 CCG 系统中，Claude 作为协调者需要在多个决策点做出判断。本文档整合所有决策逻辑，提供清晰的决策树和状态机。
 
+### 决策机制增强（2026-01-21 更新）
+
+本框架已集成以下增强机制：
+
+1. **决策可追溯性** ([decision_traceability.md](decision_traceability.md))
+   - 增强版日志格式（reasoning + rule + context）
+   - 决策推理模板（Level 0-3）
+   - 规则引用和查询分析
+
+2. **批量决策优化** ([batch_decision_optimization.md](batch_decision_optimization.md))
+   - 批量模式检测（≥3个相似决策）
+   - 批量处理选项（全部应用/预览/逐个确认）
+   - 相似度计算算法
+
+3. **决策冲突解决** ([decision_conflict_resolution.md](decision_conflict_resolution.md))
+   - 5级优先级体系（安全性 > 用户指令 > Contract > 超时 > 效率）
+   - 冲突检测和解决算法
+   - 常见冲突场景和方案
+
+4. **上下文感知决策** ([context_aware_decision.md](context_aware_decision.md))
+   - 任务优先级（P0-P3）动态调整
+   - 复杂度和风险评估
+   - 紧急模式/探索模式/高风险模式
+
 ---
 
 ## 核心决策原则
