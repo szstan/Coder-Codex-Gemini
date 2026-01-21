@@ -133,7 +133,7 @@ Codex 先行（架构分析）→ Gemini 执行（基于指导实现）→ Codex
 | ----------- | -------------------- | -------------------- |
 | sandbox     | workspace-write      | 沙箱策略（灵活控制） |
 | yolo        | true                 | 跳过审批             |
-| model       | gemini-3-pro-preview | 默认模型             |
+| model       | gemini-3-pro-high    | 默认使用高性能模型   |
 | max_retries | 1                    | 自动重试             |
 
 **使用约定**：
