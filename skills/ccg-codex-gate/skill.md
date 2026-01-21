@@ -163,8 +163,8 @@ tags: [codex, review, gate, blocking, contract]
 ## 相关文档
 
 - Codex 审核门禁：`ai/codex_review_gate.md`
-- 失败循环决策：`ai/FAILURE_LOOP_DECISION.md`
-- Contract 模板：`ai/contracts/CONTRACT_TEMPLATE.md`
+- 失败循环决策：`ai/failure_loop_decision.md`
+- Contract 模板：`ai/contracts/contract_template.md`
 - Codex 企业级审核：`/codex-code-review-enterprise` Skill
 
 ## 注意事项

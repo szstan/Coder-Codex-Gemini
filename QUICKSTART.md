@@ -325,7 +325,7 @@ cat templates/ccg-global-prompt.md >> ~/.claude/CLAUDE.md
 
 ### 文档资源
 - `README.md` - 项目概述和架构
-- `ai/DEPENDENCIES.md` - 系统依赖清单
+- `ai/dependencies.md` - 系统依赖清单
 - `ai/contract_quality_standards.md` - Contract 质量标准
 - `ai/testing_strategy.md` - 测试策略指南
 - `ai/git_workflow.md` - Git 工作流规范

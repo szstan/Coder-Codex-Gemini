@@ -2,6 +2,11 @@
 
 > 一页教你「什么时候要写 Contract、什么时候不用」
 
+> **相关文档**：
+> - [编写原则](../contract_principles.md) - 如何写好 Contract
+> - [质量标准](../contract_quality_standards.md) - Contract 验收标准
+> - [空白模板](contract_template.md) - 创建新 Contract
+
 ---
 
 ## 快速决策树

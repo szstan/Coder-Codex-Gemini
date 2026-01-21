@@ -223,5 +223,5 @@
 
 - **项目仓库**: https://github.com/szstan/Coder-Codex-Gemini
 - **文档中心**: [skills/ccg-workflow/](skills/ccg-workflow/)
-- **依赖清单**: [ai/DEPENDENCIES.md](ai/DEPENDENCIES.md)
+- **依赖清单**: [ai/dependencies.md](ai/dependencies.md)
 - **会话管理**: [docs/SESSION_MANAGEMENT_GUIDE.md](docs/SESSION_MANAGEMENT_GUIDE.md)

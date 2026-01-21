@@ -331,7 +331,7 @@ Claude      亲自动手
 
 ## Contract vs Code 修复决策
 
-> 参考：`FAILURE_LOOP_DECISION.md`
+> 参考：`failure_loop_decision.md`
 
 ```
 Codex 审核 Blocking

@@ -348,7 +348,7 @@ CCG 提供完整的 AI 治理框架，确保代码质量和工作流规范。
 
 ### 系统依赖清单
 
-**依赖文档**：`ai/DEPENDENCIES.md`
+**依赖文档**：`ai/dependencies.md`
 - 列出 CCG 系统在各个阶段使用的 Skill、MCP 工具和技术依赖
 - 提供完整的初始化配置指南
 - 包含常见问题和解决方案
@@ -387,8 +387,8 @@ CCG 提供完整的 AI 治理框架，确保代码质量和工作流规范。
 - 需要明确测试策略
 
 **合约位置**：`ai/contracts/`
-- 使用 `CONTRACT_TEMPLATE.md` 创建新合约
-- 参考 `CONTRACT_QUICKSTART.md` 快速入门
+- 使用 `contract_template.md` 创建新合约
+- 参考 `contract_quickstart.md` 快速入门
 - 当前任务合约保存在 `ai/contracts/current.md`
 
 **Contract 质量标准**：`ai/contract_quality_standards.md`
@@ -518,7 +518,7 @@ CCG 提供完整的 AI 治理框架，确保代码质量和工作流规范。
 - 提供自动驾驶策略
 - 避免无限循环
 
-**失败循环决策**：`ai/FAILURE_LOOP_DECISION.md`
+**失败循环决策**：`ai/failure_loop_decision.md`
 - 失败处理框架
 - 决策树和重试策略
 

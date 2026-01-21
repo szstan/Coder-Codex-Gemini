@@ -221,10 +221,10 @@ tags: [contract, checklist, scope, constraints]
 
 ## 相关文档
 
-- Contract 模板：`ai/contracts/CONTRACT_TEMPLATE.md`
-- Contract 检查清单：`ai/CONTRACT_CHECKLIST.md`
-- Contract 快速参考：`ai/CONTRACT_QUICKREF.md`
-- Contract 快速入门：`ai/contracts/CONTRACT_QUICKSTART.md`
+- Contract 模板：`ai/contracts/contract_template.md`
+- Contract 质量标准：`ai/contract_quality_standards.md`
+- Contract 编写原则：`ai/contract_principles.md`
+- Contract 快速入门：`ai/contracts/contract_quickstart.md`
 
 ## 注意事项
 
