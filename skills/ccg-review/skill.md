@@ -251,7 +251,7 @@ Coder 执行完成后
 ## 相关文档
 
 - 详细文档：`ai/claude_review_checklist.md`
-- Contract 模板：`ai/contracts/CONTRACT_TEMPLATE.md`
+- Contract 模板：`ai/contracts/contract_template.md`
 - Codex 审核门禁：`ai/codex_review_gate.md`
 - 代码质量指南：`ai/coder_quality_guide.md`
 

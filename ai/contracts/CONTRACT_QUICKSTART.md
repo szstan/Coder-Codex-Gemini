@@ -115,7 +115,7 @@
 
 ### Step 2: 创建 Contract
 ```bash
-cp ai/contracts/CONTRACT_TEMPLATE.md ai/contracts/current.md
+cp ai/contracts/contract_template.md ai/contracts/current.md
 ```
 
 ### Step 3: 让 Claude 填写

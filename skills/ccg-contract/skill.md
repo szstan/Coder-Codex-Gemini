@@ -190,7 +190,7 @@ tags: [contract, checklist, scope, constraints]
 - 测试要求
 
 ### 步骤 4：编写 Contract（5 分钟）
-- 使用 `ai/contracts/CONTRACT_TEMPLATE.md` 模板
+- 使用 `ai/contracts/contract_template.md` 模板
 - 填写所有必需章节
 - 保持简洁（10-30 行）
 

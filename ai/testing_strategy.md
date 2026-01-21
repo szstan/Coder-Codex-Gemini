@@ -393,7 +393,7 @@ jobs:
 
 ### 8.1 Contract 中的测试要求
 
-在 `ai/contracts/CONTRACT_TEMPLATE.md` 的 **Section 5: Test Requirements** 中：
+在 `ai/contracts/contract_template.md` 的 **Section 5: Test Requirements** 中：
 
 ```markdown
 ## 5. Test Requirements

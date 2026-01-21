@@ -231,7 +231,7 @@ TOTAL                   80      5    94%
 
 ### 6.1 Contract 中的验收标准
 
-在 `ai/contracts/CONTRACT_TEMPLATE.md` Section 5 中应明确：
+在 `ai/contracts/contract_template.md` Section 5 中应明确：
 
 ```markdown
 ## 5. Test Requirements
