@@ -1,0 +1,187 @@
+{
+  "// 文档说明": "CCG 用户偏好配置 - 用于自定义决策行为、超时阈值、降级策略等",
+  "// 版本": "1.0.0",
+  "// 最后更新": "2026-01-21",
+
+  "// ========== 决策权限配置 ==========": "",
+  "decision_authority": {
+    "// 说明": "自定义各场景的决策权限等级（level_0/level_1/level_2/level_3）",
+    "// 参考文档": "ai/decision_authority_matrix.md",
+
+    "auto_retry_network": "level_0",
+    "// 网络超时自动重试 - 默认 level_0（完全自主）",
+
+    "auto_fix_syntax": "level_2",
+    "// 语法错误自动修复 - 默认 level_2（提示确认）",
+
+    "auto_install_deps": "level_1",
+    "// 自动安装依赖 - 默认 level_1（报告后执行）",
+
+    "auto_git_commit": "level_2",
+    "// 自动 Git 提交 - 默认 level_2（提示确认）",
+
+    "auto_test_fix": "level_1",
+    "// 测试失败自动修复 - 默认 level_1（报告后执行）",
+
+    "auto_service_degrade": "level_1",
+    "// 服务降级 - 默认 level_1（报告后执行）",
+
+    "global_strictness": "normal",
+    "// 全局严格模式: strict（严格）/ normal（正常）/ relaxed（宽松）"
+  },
+
+  "// ========== 超时配置 ==========": "",
+  "timeouts": {
+    "// 说明": "任务级超时阈值（秒）",
+    "// 参考文档": "ai/timeout_guardrails.md",
+
+    "coder_default": 120,
+    "// Coder 默认超时（2 分钟）",
+
+    "coder_max": 600,
+    "// Coder 最大超时（10 分钟）",
+
+    "codex_default": 120,
+    "// Codex 默认超时（2 分钟）",
+
+    "codex_max": 300,
+    "// Codex 最大超时（5 分钟）",
+
+    "gemini_default": 120,
+    "// Gemini 默认超时（2 分钟）",
+
+    "gemini_max": 480,
+    "// Gemini 最大超时（8 分钟）",
+
+    "claude_tools_default": 120,
+    "// Claude 工具默认超时（2 分钟）"
+  },
+
+  "// ========== 决策级超时配置 ==========": "",
+  "guardrails": {
+    "// 说明": "防止 Claude 陷入循环的保护机制",
+
+    "max_same_file_reads": 5,
+    "// 最多重复读取同一文件次数",
+
+    "max_consecutive_failures": 3,
+    "// 最多连续失败次数",
+
+    "no_progress_timeout": 600,
+    "// 无进展超时（秒，10 分钟）",
+
+    "max_searches": 20,
+    "// 最多搜索次数（10 分钟内）",
+
+    "search_window": 600,
+    "// 搜索窗口（秒，10 分钟）"
+  },
+
+  "// ========== 重试策略配置 ==========": "",
+  "retry_strategy": {
+    "// 说明": "各 Agent 的重试配置",
+    "// 参考文档": "ai/error-handling/retry_strategy.md",
+
+    "coder_max_retries": 0,
+    "// Coder 最大重试次数（默认不重试，有写入副作用）",
+
+    "codex_max_retries": 1,
+    "// Codex 最大重试次数（默认 1 次，只读操作）",
+
+    "gemini_max_retries": 1,
+    "// Gemini 最大重试次数（默认 1 次）",
+
+    "exponential_backoff_base": 1,
+    "// 指数退避基础延迟（秒）",
+
+    "max_backoff_time": 16,
+    "// 最大退避时间（秒）"
+  },
+
+  "// ========== 测试修复配置 ==========": "",
+  "test_fix": {
+    "// 说明": "测试失败自动修复配置",
+    "// 参考文档": "ai/testing/test_failure_auto_fix.md",
+
+    "max_fix_attempts": 3,
+    "// 最大修复尝试次数",
+
+    "min_confidence_threshold": 0.5,
+    "// 最小置信度阈值（低于此值不尝试修复）",
+
+    "continue_fix_threshold": 0.6,
+    "// 继续修复的置信度阈值（动态评估后）",
+
+    "stop_on_regression": true,
+    "// 检测到问题加重时立即停止"
+  },
+
+  "// ========== 降级策略配置 ==========": "",
+  "degradation": {
+    "// 说明": "服务降级配置",
+    "// 参考文档": "ai/error-handling/auto_degradation.md",
+
+    "auto_degrade": true,
+    "// 是否自动降级",
+
+    "notify_user": true,
+    "// 降级时是否通知用户",
+
+    "codex_fallback": "coder_review",
+    "// Codex 降级方案: coder_review / claude_self_review",
+
+    "gemini_fallback": "codex_coder",
+    "// Gemini 降级方案: codex_coder / coder_only / claude_manual",
+
+    "coder_fallback": "claude_manual",
+    "// Coder 降级方案: claude_manual / stop_task",
+
+    "max_degradation_level": 2,
+    "// 最大降级层级: 0（正常）/ 1（备用AI）/ 2（Claude手动）/ 3（停止任务）"
+  },
+
+  "// ========== 日志配置 ==========": "",
+  "logging": {
+    "// 说明": "日志记录配置",
+
+    "enable_decision_log": true,
+    "// 启用决策日志（.ccg/decision_log.jsonl）",
+
+    "enable_degradation_log": true,
+    "// 启用降级日志（.ccg/degradation_log.jsonl）",
+
+    "enable_timeout_log": true,
+    "// 启用超时日志（.ccg/timeout_log.jsonl）",
+
+    "log_retention_days": 30,
+    "// 日志保留天数",
+
+    "log_level": "info",
+    "// 日志级别: debug / info / warning / error"
+  },
+
+  "// ========== 模型配置 ==========": "",
+  "models": {
+    "// 说明": "各 Agent 使用的模型配置",
+
+    "gemini_model": "gemini-3-pro-high",
+    "// Gemini 默认模型（高性能）",
+
+    "prefer_high_quality": true,
+    "// 优先使用高质量模型（即使成本更高）"
+  },
+
+  "// ========== 实验性功能 ==========": "",
+  "experimental": {
+    "// 说明": "实验性功能开关",
+
+    "enable_user_preference_learning": false,
+    "// 启用用户偏好学习（根据历史选择自动调整权限）",
+
+    "enable_smart_timeout_adjustment": false,
+    "// 启用智能超时调整（根据任务复杂度动态调整）",
+
+    "enable_confidence_boosting": false,
+    "// 启用置信度提升（根据历史成功率调整初始置信度）"
+  }
+}
